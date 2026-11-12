@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.github.piotr-janczukowicz</groupId>
+    <artifactId>common-parent</artifactId>
+    <version>15</version>
+    <relativePath/>
+  </parent>
+
+  <artifactId>gitlab-client</artifactId>
+  <version>1-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>gitlab-client</name>
+  <description>Transport for the GitLab REST API: authenticated, retrying, rate-limit aware HTTP client with error mapping and pagination</description>
+  <url>https://github.com/piotr-janczukowicz/gitlab-client</url>
+
+  <properties>
+    <common-core.version>6</common-core.version>
+    <junit.parallel.enabled>true</junit.parallel.enabled>
+    <test.module.args>--add-modules jdk.httpserver --add-reads io.github.piotr_janczukowicz.gitlabclient=jdk.httpserver --add-opens io.github.piotr_janczukowicz.gitlabclient/io.github.piotr_janczukowicz.architecture=common.core</test.module.args>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.github.piotr-janczukowicz</groupId>
+      <artifactId>common-core</artifactId>
+      <version>${common-core.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>okhttp-jvm</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.soabase.record-builder</groupId>
+      <artifactId>record-builder-core</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.github.piotr-janczukowicz</groupId>
+      <artifactId>common-core</artifactId>
+      <version>${common-core.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit6</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.github.hakky54</groupId>
+      <artifactId>logcaptor</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-testCompile</id>
+            <configuration>
+              <compilerArgs>
+                <arg>--add-modules</arg>
+                <arg>jdk.httpserver</arg>
+                <arg>--add-reads</arg>
+                <arg>io.github.piotr_janczukowicz.gitlabclient=jdk.httpserver</arg>
+              </compilerArgs>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <groups>unit</groups>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <groups>integration</groups>
+          <includes>
+            <include>**/*Test.java</include>
+            <include>**/*IT.java</include>
+            <include>**/*ITCase.java</include>
+          </includes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

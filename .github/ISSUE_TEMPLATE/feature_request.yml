@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an improvement or a missing operation
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that the client does not support or makes hard?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: The API you would like, ideally with a short usage example.
+      render: java
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: flavor
+    attributes:
+      label: Applies to
+      multiple: true
+      options:
+        - GitHub.com
+        - GitHub Enterprise Cloud
+        - GitHub Enterprise Server
+  - type: input
+    id: docs
+    attributes:
+      label: GitHub REST API documentation link
+      description: If this is about a specific endpoint.
