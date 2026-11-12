@@ -3,10 +3,12 @@
 Java 21 transport for the GitLab REST API: an authenticated, retrying, rate-limit aware HTTP client for gitlab.com,
 GitLab Dedicated and self-managed GitLab, with GitLab's error mapping, tier guard and pagination built in.
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.piotr-janczukowicz/gitlab-client)](https://central.sonatype.com/artifact/io.github.piotr-janczukowicz/gitlab-client)
 ![Java 21](https://img.shields.io/badge/Java-21-orange.svg)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Build](https://github.com/piotr-janczukowicz/gitlab-client/actions/workflows/main.yml/badge.svg)](https://github.com/piotr-janczukowicz/gitlab-client/actions/workflows/main.yml)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/a3ea4adf4ac04c56b3bd8e9557c62d7c)](https://app.codacy.com/gh/piotr-janczukowicz/gitlab-client/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Coverage](https://app.codacy.com/project/badge/Coverage/a3ea4adf4ac04c56b3bd8e9557c62d7c)](https://app.codacy.com/gh/piotr-janczukowicz/gitlab-client/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_Coverage)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/a3ea4adf4ac04c56b3bd8e9557c62d7c)](https://app.codacy.com/gh/piotr-janczukowicz/gitlab-client/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_Grade)
 
 ## Why this library
 
