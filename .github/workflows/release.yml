@@ -1,0 +1,36 @@
+name: Release
+
+# Run by hand on the default branch. Deploys the next version to GitHub Packages, tags it and creates the GitHub
+# release, then opens the pull request for the next -SNAPSHOT version. The steps live in common-parent
+# (reusable-release-package.yml and reusable-next-snapshot.yml); the deploy waits for a green Main run of the same
+# commit. If the deploy fails after it uploaded some files, GitHub Packages may refuse the same version again: delete
+# that package version, then run the workflow again.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    permissions:
+      actions: read
+      contents: write
+      packages: write
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    uses: piotr-janczukowicz/common-parent/.github/workflows/reusable-release-package.yml@3d6301d04e0f494f8144e0f0523cf942c1ffce2d # v15
+    secrets: inherit
+
+  next-snapshot:
+    needs: release
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: piotr-janczukowicz/common-parent/.github/workflows/reusable-next-snapshot.yml@3d6301d04e0f494f8144e0f0523cf942c1ffce2d # v15
+    secrets: inherit
+    with:
+      tag: v${{ needs.release.outputs.release }}

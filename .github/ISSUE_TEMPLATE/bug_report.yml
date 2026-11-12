@@ -1,0 +1,53 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: A minimal code snippet or the calls that trigger it.
+      render: java
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Stack trace or logs
+      description: Remove tokens and other secrets first.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Library version
+      placeholder: e.g. 2026.3.10.3
+    validations:
+      required: true
+  - type: dropdown
+    id: flavor
+    attributes:
+      label: GitHub product
+      options:
+        - GitHub.com
+        - GitHub Enterprise Cloud
+        - GitHub Enterprise Server
+    validations:
+      required: true
+  - type: input
+    id: ghes-version
+    attributes:
+      label: GitHub Enterprise Server version
+      description: Only if you use Enterprise Server.
+      placeholder: e.g. 3.22
+  - type: input
+    id: java
+    attributes:
+      label: Java version and OS
+      placeholder: e.g. Temurin 21, Ubuntu 24.04
