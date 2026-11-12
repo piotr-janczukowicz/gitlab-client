@@ -44,6 +44,12 @@ class GitLabPaginationIntegrationTest {
         GitLabPage<Issue> issues(final String project, final GitLabPageRequest request) throws IOException {
             return pageList(ISSUES, Map.of("state", "opened"), request, JsonTypes.listOf(Issue.class), project);
         }
+
+        GitLabPage<Issue> issues(
+                final String project, final GitLabPageRequest request, final GitLabListSpec<Issue> spec)
+                throws IOException {
+            return pageList(ISSUES, Map.of("state", "opened"), request, spec, project);
+        }
     }
 
     @Test
@@ -123,6 +129,25 @@ class GitLabPaginationIntegrationTest {
 
         assertThat(issues).extracting(Issue::id).containsExactly(1L, 2L);
         HTTP.verifyQueryParam(GET, path, "cursor", "ab+c==/d|e");
+    }
+
+    @Test
+    void pageList_shouldSendAKeysetRequest_whenTheListSpecAllowsKeyset() throws IOException {
+        HTTP.stub(GET, ISSUES_PATH, json("[{\"id\":7,\"title\":\"k\"}]"));
+
+        final List<Issue> issues;
+        try (GitLabClient client = client()) {
+            issues = new IssuesApi(GitLabCaller.of(client))
+                    .issues(
+                            "group/sub/project",
+                            GitLabKeysetRequest.of("id", "asc", 1),
+                            GitLabListSpec.offsetOrKeyset(JsonTypes.listOf(Issue.class)))
+                    .all();
+        }
+
+        assertThat(issues).extracting(Issue::id).containsExactly(7L);
+        HTTP.verifyQueryParam(GET, ISSUES_PATH, "pagination", "keyset");
+        HTTP.verifyQueryParam(GET, ISSUES_PATH, "state", "opened");
     }
 
     private static GitLabClient client() {

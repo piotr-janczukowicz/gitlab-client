@@ -100,9 +100,21 @@ final class GitLabErrors {
 
     private static ParsedError fromBody(final GitLabErrorBody body, final int status, final String rawBody) {
         final List<GitLabValidationError> errors = body.fieldErrors().stream()
-                .map(field -> new GitLabValidationError(field.field(), field.messages()))
+                .map(field -> new GitLabValidationError(
+                        withoutControlCharacters(field.field()),
+                        field.messages().stream()
+                                .map(GitLabErrors::withoutControlCharacters)
+                                .toList()))
                 .toList();
-        return new ParsedError(messageOf(body, errors, status), errors, rawBody);
+        return new ParsedError(withoutControlCharacters(messageOf(body, errors, status)), errors, rawBody);
+    }
+
+    // Server text reaches logs through the exception message, so a control character that could forge a log line or
+    // an escape sequence becomes a space. The raw body keeps the text as it came.
+    private static String withoutControlCharacters(final String text) {
+        final StringBuilder clean = new StringBuilder(text.length());
+        text.chars().forEach(c -> clean.append(Character.isISOControl(c) ? ' ' : (char) c));
+        return clean.toString();
     }
 
     private static String messageOf(

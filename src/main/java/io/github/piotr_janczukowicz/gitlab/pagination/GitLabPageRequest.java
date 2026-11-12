@@ -34,7 +34,9 @@ public sealed interface GitLabPageRequest permits GitLabNoneRequest, GitLabOffse
     }
 
     /**
-     * No pagination parameter at all: the server's default page size and first page.
+     * No pagination parameter at all: the server's default page size and first page. The configured page size is not
+     * sent either, so a client set up for 100 items per page still gets the server's default; the query may carry its
+     * own {@code per_page} or {@code page}.
      *
      * @return the request
      */

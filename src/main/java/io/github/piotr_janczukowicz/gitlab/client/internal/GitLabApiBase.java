@@ -19,9 +19,9 @@ import java.util.Set;
  * not been tried against a live instance that runs under a relative URL root. Of those clients, only the Go client also
  * accepts a root that already ends in {@code /api/v4} without repeating it, as this class does.
  *
- * <p>The constructor refuses a root that is not an absolute {@code http} or {@code https} URI with a host, or that
- * carries user info, a query or a fragment, with an {@link IllegalArgumentException} that names the URI without them;
- * {@code null} is a {@link NullPointerException}.
+ * <p>The constructor refuses a root that is not an absolute {@code http} or {@code https} URI with a host that Java can
+ * parse (a name with an underscore is not one), or that carries user info, a query or a fragment, with an
+ * {@link IllegalArgumentException} that names the URI without them; {@code null} is a {@link NullPointerException}.
  *
  * @param instanceRoot root URI of the instance; a root that already ends in {@code /api/v4} is accepted and not
  *     extended again
@@ -35,7 +35,7 @@ public record GitLabApiBase(URI instanceRoot) {
         requireNonNull(instanceRoot, "instanceRoot");
         final String scheme =
                 instanceRoot.getScheme() == null ? "" : instanceRoot.getScheme().toLowerCase(Locale.ROOT);
-        if (!SCHEMES.contains(scheme) || instanceRoot.getRawAuthority() == null) {
+        if (!SCHEMES.contains(scheme) || instanceRoot.getRawAuthority() == null || instanceRoot.getHost() == null) {
             throw new IllegalArgumentException("instanceRoot must be an absolute http or https URI with a host: "
                     + HttpUris.describeSafe(instanceRoot));
         }

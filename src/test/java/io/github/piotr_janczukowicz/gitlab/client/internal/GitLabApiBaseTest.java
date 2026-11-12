@@ -35,6 +35,16 @@ class GitLabApiBaseTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"https://my_host.example", "http://under_score:8080/gitlab"})
+    void constructor_shouldRefuseAHostJavaCannotParse_whenTheNameHasAnUnderscore(final String instanceRoot) {
+        final URI root = URI.create(instanceRoot);
+
+        final Throwable thrown = catchThrowable(() -> GitLabApiBase.of(root));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("host");
+    }
+
+    @ParameterizedTest
     @ValueSource(
             strings = {
                 "https://gitlab.com?private_token=secret",

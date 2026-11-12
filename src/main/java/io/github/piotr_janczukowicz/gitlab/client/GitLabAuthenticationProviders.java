@@ -62,7 +62,8 @@ public final class GitLabAuthenticationProviders {
     /**
      * A bearer token that the caller replaces over time, such as a refreshed OAuth token or a rotated access token. The
      * identity names the principal, so the rate-limit state and the response cache survive each replacement; it must be
-     * unique per principal and is never a secret. A 401 is not retried.
+     * unique per principal and is never a secret. A 401 is not retried. An exception that {@code tokens} throws reaches
+     * the caller of that request unchanged.
      *
      * @param identity name of the principal, such as a service account; it appears in logs, so it must not be the token
      * @param tokens supplies the current token on each request
@@ -70,6 +71,7 @@ public final class GitLabAuthenticationProviders {
      * @throws NullPointerException if an argument is {@code null}
      * @throws IllegalArgumentException if {@code identity} is blank, or at request time if {@code tokens} returns a
      *     blank value
+     * @throws NullPointerException at request time if {@code tokens} returns {@code null}
      */
     public static AuthenticationProvider rotatingToken(final String identity, final Supplier<String> tokens) {
         return new RotatingTokenAuthenticationProvider(identity, requireNonNull(tokens, "tokens"));

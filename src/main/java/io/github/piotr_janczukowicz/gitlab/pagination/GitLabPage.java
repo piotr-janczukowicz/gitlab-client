@@ -102,7 +102,10 @@ public final class GitLabPage<T> implements Page<T, GitLabPage<T>> {
     }
 
     /**
-     * Every item of this page and of the pages after it, read eagerly.
+     * Every item of this page and of the pages after it, read eagerly. The number of pages is limited only if
+     * {@code PaginationConfiguration.maxPages} is set, so set it when the server is not trusted. A walk goes forward
+     * only, so read it once: a second call on the same first page reads that page and then fails with an
+     * {@link IllegalStateException} where the second walk would advance.
      *
      * @return all the items
      * @throws IOException if a request fails
@@ -113,7 +116,9 @@ public final class GitLabPage<T> implements Page<T, GitLabPage<T>> {
 
     /**
      * The items of this page and of the pages after it, requested lazily. A failure to load a page surfaces as an
-     * {@link java.io.UncheckedIOException} from the stream operation.
+     * {@link java.io.UncheckedIOException} from the stream operation. A walk goes forward only, so read it once: a
+     * second call on the same first page reads that page and then fails with an {@link IllegalStateException} where the
+     * second walk would advance.
      *
      * @return a sequential stream of items
      */
@@ -123,7 +128,9 @@ public final class GitLabPage<T> implements Page<T, GitLabPage<T>> {
 
     /**
      * This page and the pages after it, requested lazily. A failure to load a page surfaces as an
-     * {@link java.io.UncheckedIOException} from the stream operation.
+     * {@link java.io.UncheckedIOException} from the stream operation. A walk goes forward only, so read it once: a
+     * second call on the same first page reads that page and then fails with an {@link IllegalStateException} where the
+     * second walk would advance.
      *
      * @return a sequential stream of pages
      */

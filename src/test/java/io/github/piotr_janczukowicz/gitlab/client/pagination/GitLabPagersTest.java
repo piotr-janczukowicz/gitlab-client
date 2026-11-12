@@ -482,8 +482,8 @@ class GitLabPagersTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"[]", "  [ ]", "\n\t[\r\n{\"id\":1}]", "\r\n[]"})
-    void start_shouldAcceptAnArrayWithLeadingWhitespace_whenTheBodyIsAJsonArray(final String body) throws IOException {
+    @ValueSource(strings = {"[]", "  [ ]", "\r\n[]"})
+    void start_shouldReadNoItems_whenTheBodyIsAnEmptyArrayWithWhitespace(final String body) throws IOException {
         final ScriptedTransport scripted = ScriptedTransport.replying(page(body));
 
         final GitLabPage<Item> first;
@@ -491,7 +491,20 @@ class GitLabPagersTest {
             first = start(client, "/projects", Map.of(), GitLabPageRequest.byPage());
         }
 
-        assertThat(first.items()).hasSizeLessThanOrEqualTo(1);
+        assertThat(first.items()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"[{\"id\":1}]", "  [ {\"id\":1} ]", "\n\t[\r\n{\"id\":1}]"})
+    void start_shouldReadTheItem_whenTheBodyIsAnArrayWithLeadingWhitespace(final String body) throws IOException {
+        final ScriptedTransport scripted = ScriptedTransport.replying(page(body));
+
+        final GitLabPage<Item> first;
+        try (DefaultGitLabClient client = client(scripted)) {
+            first = start(client, "/projects", Map.of(), GitLabPageRequest.byPage());
+        }
+
+        assertThat(first.items()).containsExactly(new Item(1));
     }
 
     @Test

@@ -57,9 +57,10 @@ public final class GitLabCaller extends AbstractHttpCaller {
 
     /**
      * Refuses an operation that needs a higher subscription tier than the client was configured with. A generated
-     * operation that carries {@link RequiresTier} calls it first, so a refused call sends nothing. The check applies
-     * only to a self-managed or Dedicated instance, whose tier is the same for every group: a gitlab.com subscription
-     * belongs to a top-level group, so no tier can be configured for it. With no tier configured nothing is refused.
+     * operation that carries {@link RequiresTier} calls it first, so a refused call sends nothing. A tier can be
+     * configured only for a self-managed or Dedicated instance, whose tier is the same for every group: a gitlab.com
+     * subscription belongs to a top-level group, so the configuration refuses one. With no tier configured nothing is
+     * refused.
      *
      * @param required the lowest tier that offers the operation
      * @param operation the operation, such as its {@code operationId}, named in the exception
@@ -71,9 +72,7 @@ public final class GitLabCaller extends AbstractHttpCaller {
         requireNonNull(required, "required");
         requireNotBlank(operation, "operation");
         final Optional<GitLabTier> configured = client.tier();
-        if (configured.isPresent()
-                && client.flavor() != GitLabFlavor.GITLAB_COM
-                && !configured.get().includes(required)) {
+        if (configured.isPresent() && !configured.get().includes(required)) {
             throw new GitLabTierException(operation, required, configured.get());
         }
     }

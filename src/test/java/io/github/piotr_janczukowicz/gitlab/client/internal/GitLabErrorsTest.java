@@ -71,6 +71,31 @@ class GitLabErrorsTest {
     }
 
     @Test
+    void toException_shouldReplaceControlCharactersInTheMessage_whenTheServerSendsThem() {
+        final HttpResponse response = response(500, "{\"message\":\"bad\\nline\\u001b[31m\\r\\tred\"}");
+
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL);
+
+        assertThat(exception).hasMessage("bad line [31m  red");
+    }
+
+    @Test
+    void toException_shouldReplaceControlCharactersInFieldErrors_whenTheServerSendsThem() {
+        final HttpResponse response = response(400, "{\"message\":{\"na\\nme\":[\"is\\u001b invalid\"]}}");
+
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.POST, response, URI_OF_CALL);
+
+        assertThat(exception)
+                .isInstanceOfSatisfying(
+                        GitLabValidationException.class,
+                        validation -> assertSoftly(softly -> {
+                            softly.assertThat(validation.errors())
+                                    .containsExactly(new GitLabValidationError("na me", List.of("is  invalid")));
+                            softly.assertThat(validation).hasMessage("na me is  invalid");
+                        }));
+    }
+
+    @Test
     void toException_shouldUseTheMessage_whenBodyIsTheDocumentedUnauthorizedBody() {
         final HttpResponse response = response(401, "{\"message\":\"401 Unauthorized\"}");
 
