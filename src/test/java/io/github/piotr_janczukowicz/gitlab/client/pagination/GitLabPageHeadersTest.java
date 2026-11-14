@@ -27,7 +27,7 @@ class GitLabPageHeadersTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "   ", "0", "-3", "abc", "1.5", "99999999999999999999"})
+    @ValueSource(strings = {"", "   ", "0", "-3", "abc", "1.5", "99999999999999999999", "+3"})
     void nextPage_shouldBeNull_whenTheHeaderIsNotAPositiveWholeNumber(final String value) {
         final HttpResponse response = response("X-Next-Page", value);
 

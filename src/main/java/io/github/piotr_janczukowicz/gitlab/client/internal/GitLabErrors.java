@@ -15,6 +15,7 @@ import io.github.piotr_janczukowicz.http.HttpErrorBodies;
 import io.github.piotr_janczukowicz.http.HttpMethod;
 import io.github.piotr_janczukowicz.http.HttpResponse;
 import io.github.piotr_janczukowicz.json.JsonCodec;
+import io.github.piotr_janczukowicz.util.StringUtils;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -119,24 +120,20 @@ final class GitLabErrors {
 
     private static String messageOf(
             final GitLabErrorBody body, final List<GitLabValidationError> errors, final int status) {
-        if (!isBlank(body.message())) {
+        if (!StringUtils.isBlank(body.message())) {
             return body.message();
         }
         if (!errors.isEmpty()) {
             return errors.stream().map(GitLabErrors::describe).collect(Collectors.joining("; "));
         }
-        if (!isBlank(body.errorDescription())) {
+        if (!StringUtils.isBlank(body.errorDescription())) {
             return body.errorDescription();
         }
-        return isBlank(body.error()) ? fallbackMessage(status) : body.error();
+        return StringUtils.isBlank(body.error()) ? fallbackMessage(status) : body.error();
     }
 
     private static String describe(final GitLabValidationError error) {
         return error.field() + " " + String.join(", ", error.messages());
-    }
-
-    private static boolean isBlank(final @Nullable String text) {
-        return text == null || text.isBlank();
     }
 
     private static String fallbackMessage(final int status) {

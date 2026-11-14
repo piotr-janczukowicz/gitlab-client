@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -121,5 +123,76 @@ class GitLabQueryParametersTest {
         final Throwable thrown = catchThrowable(() -> query.put("b", "2"));
 
         assertThat(thrown).isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void text_shouldRejectABlankName_whenTheNameIsEmpty() {
+        final GitLabQueryParameters parameters = GitLabQueryParameters.builder();
+
+        final Throwable thrown = catchThrowable(() -> parameters.text(" ", "x"));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name");
+    }
+
+    @Test
+    void list_shouldRejectANullItem_whenTheListHoldsOne() {
+        final GitLabQueryParameters parameters = GitLabQueryParameters.builder();
+        final List<String> values = Arrays.asList("a", null);
+
+        final Throwable thrown = catchThrowable(() -> parameters.list("labels", values));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("labels");
+    }
+
+    @Test
+    void wire_shouldRejectANullWireValue_whenTheFunctionReturnsNull() {
+        final GitLabQueryParameters parameters = GitLabQueryParameters.builder();
+
+        final Throwable thrown = catchThrowable(() -> parameters.wire("order_by", Order.CREATED, order -> null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("order_by");
+    }
+
+    @Test
+    void wireList_shouldRejectANullWireValue_whenTheFunctionReturnsNull() {
+        final GitLabQueryParameters parameters = GitLabQueryParameters.builder();
+        final List<Order> values = List.of(Order.CREATED);
+
+        final Throwable thrown = catchThrowable(() -> parameters.wireList("order", values, order -> null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("order");
+    }
+
+    @Test
+    void wireList_shouldRejectANullItem_whenTheListHoldsOne() {
+        final GitLabQueryParameters parameters = GitLabQueryParameters.builder();
+        final List<Order> values = Arrays.asList(Order.CREATED, null);
+
+        final Throwable thrown = catchThrowable(() -> parameters.wireList("order", values, Order::wireValue));
+
+        assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("order");
+    }
+
+    @Test
+    void map_shouldLeaveOutAnEntryWithANullValue_whenTheMapHoldsOne() {
+        final Map<String, Object> values = new LinkedHashMap<>();
+        values.put("a", 1);
+        values.put("b", null);
+        final GitLabQueryParameters parameters = GitLabQueryParameters.builder();
+
+        final Map<String, String> query = parameters.map("attrs", values).build();
+
+        assertThat(query).containsExactly(Map.entry("attrs[a]", "1"));
+    }
+
+    @Test
+    void map_shouldRejectANullKey_whenTheMapHoldsOne() {
+        final Map<String, Object> values = new HashMap<>();
+        values.put(null, 1);
+        final GitLabQueryParameters parameters = GitLabQueryParameters.builder();
+
+        final Throwable thrown = catchThrowable(() -> parameters.map("attrs", values));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessageContaining("attrs");
     }
 }

@@ -2,6 +2,8 @@ package io.github.piotr_janczukowicz.gitlab.client.pagination;
 
 import io.github.piotr_janczukowicz.gitlab.GitLabHeaders;
 import io.github.piotr_janczukowicz.http.HttpResponse;
+import io.github.piotr_janczukowicz.util.NumberUtils;
+import java.util.OptionalInt;
 import org.jspecify.annotations.Nullable;
 
 /** Reads the pagination headers of a response; GitLab leaves some of them out. */
@@ -33,18 +35,7 @@ final class GitLabPageHeaders {
     }
 
     private static @Nullable Integer wholeNumber(final HttpResponse response, final String name) {
-        return response.header(name)
-                .map(String::trim)
-                .filter(text -> !text.isEmpty())
-                .map(GitLabPageHeaders::parse)
-                .orElse(null);
-    }
-
-    private static @Nullable Integer parse(final String text) {
-        try {
-            return Integer.valueOf(text);
-        } catch (final NumberFormatException unused) {
-            return null;
-        }
+        final OptionalInt number = NumberUtils.parseInt(response.header(name).orElse(null));
+        return number.isPresent() ? number.getAsInt() : null;
     }
 }

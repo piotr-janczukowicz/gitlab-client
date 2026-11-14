@@ -32,7 +32,7 @@ class GitLabRateLimitDetectorTest {
     private static final String RESET_IN_FIFTY_MINUTES =
             Long.toString(NOW.plusSeconds(3000).getEpochSecond());
 
-    private final GitLabRateLimitDetector detector = GitLabRateLimitDetector.INSTANCE;
+    private static final GitLabRateLimitDetector DETECTOR = GitLabRateLimitDetector.INSTANCE;
 
     @ParameterizedTest
     @ValueSource(ints = {200, 201, 302, 400, 401, 403, 404, 409, 422, 500, 502, 503})
@@ -40,7 +40,7 @@ class GitLabRateLimitDetectorTest {
         final HttpResponse response =
                 response(status, "Retry-After", "30", "RateLimit-Remaining", "0", "RateLimit-Reset", RESET_IN_THIRTY);
 
-        final Optional<RateLimitSignal> signal = detector.detect(response, request(HttpMethod.GET, "/projects"), CLOCK);
+        final Optional<RateLimitSignal> signal = DETECTOR.detect(response, request(HttpMethod.GET, "/projects"), CLOCK);
 
         assertThat(signal).isEmpty();
     }
@@ -50,7 +50,7 @@ class GitLabRateLimitDetectorTest {
         final HttpResponse response =
                 response(429, "Retry-After", "30", "RateLimit-Remaining", "0", "RateLimit-Reset", RESET_IN_THIRTY);
 
-        final Optional<RateLimitSignal> signal = detector.detect(response, request(HttpMethod.GET, "/projects"), CLOCK);
+        final Optional<RateLimitSignal> signal = DETECTOR.detect(response, request(HttpMethod.GET, "/projects"), CLOCK);
 
         assertThat(signal).contains(new RateLimitSignal(Duration.ofSeconds(30), NOW.plusSeconds(30), null));
     }
@@ -59,7 +59,7 @@ class GitLabRateLimitDetectorTest {
     void detect_shouldUseTheResetAlone_whenRetryAfterIsMissingAndTheThrottleIsExhausted() {
         final HttpResponse response = response(429, "RateLimit-Remaining", "0", "RateLimit-Reset", RESET_IN_THIRTY);
 
-        final Optional<RateLimitSignal> signal = detector.detect(response, request(HttpMethod.GET, "/projects"), CLOCK);
+        final Optional<RateLimitSignal> signal = DETECTOR.detect(response, request(HttpMethod.GET, "/projects"), CLOCK);
 
         assertThat(signal).contains(new RateLimitSignal(null, NOW.plusSeconds(30), null));
     }
@@ -70,9 +70,9 @@ class GitLabRateLimitDetectorTest {
                 429, "Retry-After", "30", "RateLimit-Remaining", "1500", "RateLimit-Reset", RESET_IN_FIFTY_MINUTES);
         final HttpRequest request = request(HttpMethod.POST, "/projects/7/issues");
 
-        final Optional<RateLimitSignal> signal = detector.detect(response, request, CLOCK);
+        final Optional<RateLimitSignal> signal = DETECTOR.detect(response, request, CLOCK);
 
-        assertThat(signal).contains(new RateLimitSignal(Duration.ofSeconds(30), null, detector.bucketOf(request)));
+        assertThat(signal).contains(new RateLimitSignal(Duration.ofSeconds(30), null, DETECTOR.bucketOf(request)));
     }
 
     @Test
@@ -80,9 +80,9 @@ class GitLabRateLimitDetectorTest {
         final HttpResponse response = response(429, "Retry-After", "86400");
         final HttpRequest request = request(HttpMethod.POST, "/projects");
 
-        final Optional<RateLimitSignal> signal = detector.detect(response, request, CLOCK);
+        final Optional<RateLimitSignal> signal = DETECTOR.detect(response, request, CLOCK);
 
-        assertThat(signal).contains(new RateLimitSignal(Duration.ofSeconds(86_400), null, detector.bucketOf(request)));
+        assertThat(signal).contains(new RateLimitSignal(Duration.ofSeconds(86_400), null, DETECTOR.bucketOf(request)));
     }
 
     @Test
@@ -90,9 +90,9 @@ class GitLabRateLimitDetectorTest {
         final HttpResponse response = response(429);
         final HttpRequest request = request(HttpMethod.POST, "/projects");
 
-        final Optional<RateLimitSignal> signal = detector.detect(response, request, CLOCK);
+        final Optional<RateLimitSignal> signal = DETECTOR.detect(response, request, CLOCK);
 
-        assertThat(signal).contains(new RateLimitSignal(null, null, detector.bucketOf(request)));
+        assertThat(signal).contains(new RateLimitSignal(null, null, DETECTOR.bucketOf(request)));
     }
 
     @ParameterizedTest
@@ -100,7 +100,7 @@ class GitLabRateLimitDetectorTest {
     void detect_shouldTreatRetryAfterAsAbsent_whenItIsNotAPositiveWholeNumberOfSeconds(final String retryAfter) {
         final HttpResponse response = response(429, "Retry-After", retryAfter);
 
-        final Optional<RateLimitSignal> signal = detector.detect(response, request(HttpMethod.GET, "/projects"), CLOCK);
+        final Optional<RateLimitSignal> signal = DETECTOR.detect(response, request(HttpMethod.GET, "/projects"), CLOCK);
 
         assertThat(signal)
                 .hasValueSatisfying(value -> assertThat(value.retryAfter()).isNull());
@@ -111,7 +111,7 @@ class GitLabRateLimitDetectorTest {
         final String past = Long.toString(NOW.minusSeconds(60).getEpochSecond());
         final HttpResponse response = response(429, "RateLimit-Remaining", "0", "RateLimit-Reset", past);
 
-        final Optional<RateLimitSignal> signal = detector.detect(response, request(HttpMethod.GET, "/projects"), CLOCK);
+        final Optional<RateLimitSignal> signal = DETECTOR.detect(response, request(HttpMethod.GET, "/projects"), CLOCK);
 
         assertThat(signal).contains(new RateLimitSignal(null, null, null));
     }
@@ -123,16 +123,16 @@ class GitLabRateLimitDetectorTest {
                 429, "Retry-After", "10", "RateLimit-Remaining", remaining, "RateLimit-Reset", RESET_IN_THIRTY);
         final HttpRequest request = request(HttpMethod.GET, "/projects");
 
-        final Optional<RateLimitSignal> signal = detector.detect(response, request, CLOCK);
+        final Optional<RateLimitSignal> signal = DETECTOR.detect(response, request, CLOCK);
 
-        assertThat(signal).contains(new RateLimitSignal(Duration.ofSeconds(10), null, detector.bucketOf(request)));
+        assertThat(signal).contains(new RateLimitSignal(Duration.ofSeconds(10), null, DETECTOR.bucketOf(request)));
     }
 
     @Test
     void detect_shouldBeCredentialWide_whenTheRequestIsNotKnown() {
         final HttpResponse response = response(429, "Retry-After", "30");
 
-        final Optional<RateLimitSignal> signal = detector.detect(response, CLOCK);
+        final Optional<RateLimitSignal> signal = DETECTOR.detect(response, CLOCK);
 
         assertThat(signal).contains(new RateLimitSignal(Duration.ofSeconds(30), null, null));
     }
@@ -142,7 +142,7 @@ class GitLabRateLimitDetectorTest {
         final HttpResponse response = response(200, "RateLimit-Remaining", "0", "RateLimit-Reset", RESET_IN_THIRTY);
 
         final Optional<RateLimitSignal> signal =
-                detector.detectExhaustion(response, request(HttpMethod.GET, "/projects"), CLOCK);
+                DETECTOR.detectExhaustion(response, request(HttpMethod.GET, "/projects"), CLOCK);
 
         assertThat(signal).contains(new RateLimitSignal(null, NOW.plusSeconds(30), null));
     }
@@ -153,7 +153,7 @@ class GitLabRateLimitDetectorTest {
         final HttpResponse response = response(status, "RateLimit-Remaining", "0", "RateLimit-Reset", RESET_IN_THIRTY);
 
         final Optional<RateLimitSignal> signal =
-                detector.detectExhaustion(response, request(HttpMethod.GET, "/projects"), CLOCK);
+                DETECTOR.detectExhaustion(response, request(HttpMethod.GET, "/projects"), CLOCK);
 
         assertThat(signal).isPresent();
     }
@@ -164,7 +164,7 @@ class GitLabRateLimitDetectorTest {
         final HttpResponse response = response(status, "RateLimit-Remaining", "0", "RateLimit-Reset", RESET_IN_THIRTY);
 
         final Optional<RateLimitSignal> signal =
-                detector.detectExhaustion(response, request(HttpMethod.GET, "/projects"), CLOCK);
+                DETECTOR.detectExhaustion(response, request(HttpMethod.GET, "/projects"), CLOCK);
 
         assertThat(signal).isEmpty();
     }
@@ -174,7 +174,7 @@ class GitLabRateLimitDetectorTest {
         final HttpResponse response = response(200, "RateLimit-Remaining", "5", "RateLimit-Reset", RESET_IN_THIRTY);
 
         final Optional<RateLimitSignal> signal =
-                detector.detectExhaustion(response, request(HttpMethod.GET, "/projects"), CLOCK);
+                DETECTOR.detectExhaustion(response, request(HttpMethod.GET, "/projects"), CLOCK);
 
         assertThat(signal).isEmpty();
     }
@@ -186,8 +186,8 @@ class GitLabRateLimitDetectorTest {
         final HttpResponse missing = response(200, "RateLimit-Remaining", "0");
         final HttpRequest request = request(HttpMethod.GET, "/projects");
 
-        final Optional<RateLimitSignal> afterPassed = detector.detectExhaustion(passed, request, CLOCK);
-        final Optional<RateLimitSignal> afterMissing = detector.detectExhaustion(missing, request, CLOCK);
+        final Optional<RateLimitSignal> afterPassed = DETECTOR.detectExhaustion(passed, request, CLOCK);
+        final Optional<RateLimitSignal> afterMissing = DETECTOR.detectExhaustion(missing, request, CLOCK);
 
         assertSoftly(softly -> {
             softly.assertThat(afterPassed).isEmpty();
@@ -209,17 +209,17 @@ class GitLabRateLimitDetectorTest {
                 HttpBody.absent());
 
         final Optional<RateLimitSignal> signal =
-                detector.detectExhaustion(response, request(HttpMethod.GET, "/projects"), CLOCK);
+                DETECTOR.detectExhaustion(response, request(HttpMethod.GET, "/projects"), CLOCK);
 
         assertThat(signal).isEmpty();
     }
 
     @Test
     void bucketOf_shouldBeTheSameForTheSameMethodAndPath_andDifferentOtherwise() {
-        final String post = detector.bucketOf(request(HttpMethod.POST, "/projects"));
-        final String postAgain = detector.bucketOf(request(HttpMethod.POST, "/projects"));
-        final String get = detector.bucketOf(request(HttpMethod.GET, "/projects"));
-        final String other = detector.bucketOf(request(HttpMethod.POST, "/groups"));
+        final String post = DETECTOR.bucketOf(request(HttpMethod.POST, "/projects"));
+        final String postAgain = DETECTOR.bucketOf(request(HttpMethod.POST, "/projects"));
+        final String get = DETECTOR.bucketOf(request(HttpMethod.GET, "/projects"));
+        final String other = DETECTOR.bucketOf(request(HttpMethod.POST, "/groups"));
 
         assertSoftly(softly -> {
             softly.assertThat(postAgain).isEqualTo(post);
@@ -230,8 +230,8 @@ class GitLabRateLimitDetectorTest {
 
     @Test
     void bucketOf_shouldIgnoreTheQuery_whenTheSamePathIsRequestedWithDifferentParameters() {
-        final String first = detector.bucketOf(request(HttpMethod.GET, "/projects?page=1"));
-        final String second = detector.bucketOf(request(HttpMethod.GET, "/projects?page=2"));
+        final String first = DETECTOR.bucketOf(request(HttpMethod.GET, "/projects?page=1"));
+        final String second = DETECTOR.bucketOf(request(HttpMethod.GET, "/projects?page=2"));
 
         assertThat(second).isEqualTo(first);
     }
@@ -240,8 +240,8 @@ class GitLabRateLimitDetectorTest {
     void detect_shouldRefuse_whenAnArgumentIsNull() {
         final HttpResponse response = response(429);
 
-        final Throwable noResponse = catchThrowable(() -> detector.detect(null, CLOCK));
-        final Throwable noClock = catchThrowable(() -> detector.detect(response, null));
+        final Throwable noResponse = catchThrowable(() -> DETECTOR.detect(null, CLOCK));
+        final Throwable noClock = catchThrowable(() -> DETECTOR.detect(response, null));
 
         assertSoftly(softly -> {
             softly.assertThat(noResponse).isInstanceOf(NullPointerException.class);

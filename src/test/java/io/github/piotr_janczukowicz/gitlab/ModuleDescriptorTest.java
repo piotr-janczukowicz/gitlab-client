@@ -29,7 +29,7 @@ class ModuleDescriptorTest {
         final ModuleDescriptor descriptor =
                 ModuleDescriptorTest.class.getModule().getDescriptor();
         final Set<String> targets = descriptor.exports().stream()
-                .filter(exports -> exports.source().equals(ROOT + ".client.internal"))
+                .filter(exports -> (ROOT + ".client.internal").equals(exports.source()))
                 .flatMap(exports -> exports.targets().stream())
                 .collect(Collectors.toSet());
 

@@ -49,7 +49,7 @@ class GitLabResourceApiTextIntegrationTest {
     }
 
     @Test
-    void fetchText_shouldRejectNull_whenTheCallIsMissing() throws IOException {
+    void fetchText_shouldRejectNull_whenTheCallIsMissing() {
         try (GitLabClient client = client()) {
             final TextApi api = new TextApi(GitLabCaller.of(client));
 

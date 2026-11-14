@@ -26,7 +26,7 @@ class GitLabRateLimitHeadersTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"''", "abc", "1.5", "1e3", "99999999999999999999"})
+    @CsvSource({"''", "abc", "1.5", "1e3", "99999999999999999999", "+5"})
     void wholeNumber_shouldBeNull_whenTheHeaderIsNotAUsableWholeNumber(final String text) {
         final HttpHeaders headers = HttpHeaders.of("X-Count", text);
 

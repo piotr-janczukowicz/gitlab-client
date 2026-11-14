@@ -8,7 +8,7 @@ import io.github.piotr_janczukowicz.gitlab.pagination.GitLabPageRequest;
 import io.github.piotr_janczukowicz.gitlab.pagination.GitLabPageRequestKind;
 import io.github.piotr_janczukowicz.json.JsonTypes;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +47,7 @@ class GitLabListSpecTest {
 
     @Test
     void constructor_shouldCopyTheAllowedKinds_whenTheSourceSetChangesLater() {
-        final Set<GitLabPageRequestKind> source = new HashSet<>(Set.of(GitLabPageRequestKind.OFFSET));
+        final Set<GitLabPageRequestKind> source = EnumSet.of(GitLabPageRequestKind.OFFSET);
         final GitLabListSpec<String> spec = new GitLabListSpec<>(source, JsonTypes.listOf(String.class));
 
         source.add(GitLabPageRequestKind.NONE);

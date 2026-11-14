@@ -1,6 +1,8 @@
 package io.github.piotr_janczukowicz.gitlab.client;
 
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNoNullElements;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNotBlank;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -16,6 +18,8 @@ import org.jspecify.annotations.Nullable;
  * expression.
  */
 public final class GitLabQueryParameters {
+
+    private static final String NAME = "name";
 
     private final Map<String, String> query = new LinkedHashMap<>();
 
@@ -50,6 +54,7 @@ public final class GitLabQueryParameters {
      * @return this builder
      */
     public GitLabQueryParameters text(final String name, final @Nullable String value) {
+        requireNotBlank(name, NAME);
         if (value != null) {
             query.put(name, value);
         }
@@ -64,6 +69,7 @@ public final class GitLabQueryParameters {
      * @return this builder
      */
     public GitLabQueryParameters value(final String name, final @Nullable Object value) {
+        requireNotBlank(name, NAME);
         if (value != null) {
             query.put(name, String.valueOf(value));
         }
@@ -80,8 +86,9 @@ public final class GitLabQueryParameters {
      * @return this builder
      */
     public <E> GitLabQueryParameters wire(final String name, final @Nullable E value, final Function<E, ?> wireValue) {
+        requireNotBlank(name, NAME);
         if (value != null) {
-            query.put(name, String.valueOf(wireValue.apply(value)));
+            query.put(name, String.valueOf(requireNonNull(wireValue.apply(value), name + " wire value")));
         }
         return this;
     }
@@ -94,7 +101,9 @@ public final class GitLabQueryParameters {
      * @return this builder
      */
     public GitLabQueryParameters list(final String name, final @Nullable List<?> values) {
+        requireNotBlank(name, NAME);
         if (values != null) {
+            requireNoNullElements(values, name);
             query.put(name, values.stream().map(String::valueOf).collect(Collectors.joining(",")));
         }
         return this;
@@ -111,8 +120,15 @@ public final class GitLabQueryParameters {
      */
     public <E> GitLabQueryParameters wireList(
             final String name, final @Nullable List<E> values, final Function<E, ?> wireValue) {
+        requireNotBlank(name, NAME);
         if (values != null) {
-            query.put(name, values.stream().map(wireValue).map(String::valueOf).collect(Collectors.joining(",")));
+            requireNoNullElements(values, name);
+            query.put(
+                    name,
+                    values.stream()
+                            .map(item -> requireNonNull(wireValue.apply(item), name + " wire value"))
+                            .map(String::valueOf)
+                            .collect(Collectors.joining(",")));
         }
         return this;
     }
@@ -121,12 +137,20 @@ public final class GitLabQueryParameters {
      * Adds a hash as {@code name[key]=value}, one parameter per entry.
      *
      * @param name the parameter name
-     * @param values the entries, or {@code null} to leave the parameter out
+     * @param values the entries, or {@code null} to leave the parameter out; an entry whose value is {@code null} is
+     *     left out
      * @return this builder
+     * @throws NullPointerException if a key is {@code null}
      */
     public GitLabQueryParameters map(final String name, final @Nullable Map<String, ?> values) {
+        requireNotBlank(name, NAME);
         if (values != null) {
-            values.forEach((key, item) -> query.put(name + "[" + key + "]", String.valueOf(item)));
+            values.forEach((key, item) -> {
+                requireNonNull(key, name + " key");
+                if (item != null) {
+                    query.put(name + "[" + key + "]", String.valueOf(item));
+                }
+            });
         }
         return this;
     }

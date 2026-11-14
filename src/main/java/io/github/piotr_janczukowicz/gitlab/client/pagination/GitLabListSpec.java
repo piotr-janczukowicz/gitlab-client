@@ -5,6 +5,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import io.github.piotr_janczukowicz.gitlab.pagination.GitLabPageRequest;
 import io.github.piotr_janczukowicz.gitlab.pagination.GitLabPageRequestKind;
 import io.github.piotr_janczukowicz.json.JsonType;
+import io.github.piotr_janczukowicz.util.SetUtils;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -23,7 +24,7 @@ import java.util.TreeSet;
 public record GitLabListSpec<T>(Set<GitLabPageRequestKind> allowedKinds, JsonType<List<T>> type) {
 
     public GitLabListSpec {
-        allowedKinds = Set.copyOf(requireNonNull(allowedKinds, "allowedKinds"));
+        allowedKinds = SetUtils.copyOf(allowedKinds, "allowedKinds");
         requireNonNull(type, "type");
     }
 

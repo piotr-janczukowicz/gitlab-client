@@ -3,8 +3,7 @@ package io.github.piotr_janczukowicz.gitlab.client.pagination;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.http.HttpHeaders;
-import java.util.Collections;
-import java.util.LinkedHashMap;
+import io.github.piotr_janczukowicz.http.uri.HttpUris;
 import java.util.List;
 import java.util.Map;
 
@@ -22,13 +21,7 @@ public record GitLabPageTarget(String path, Map<String, List<String>> query, Htt
 
     public GitLabPageTarget {
         requireNonNull(path, "path");
-        query = copyValues(requireNonNull(query, "query"));
+        query = HttpUris.unmodifiableQueryValues(requireNonNull(query, "query"));
         requireNonNull(overlayHeaders, "overlayHeaders");
-    }
-
-    private static Map<String, List<String>> copyValues(final Map<String, List<String>> query) {
-        final Map<String, List<String>> copy = new LinkedHashMap<>();
-        query.forEach((name, values) -> copy.put(name, List.copyOf(values)));
-        return Collections.unmodifiableMap(copy);
     }
 }

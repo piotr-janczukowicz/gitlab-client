@@ -1,13 +1,11 @@
 package io.github.piotr_janczukowicz.gitlab.client.pagination;
 
-import static io.github.piotr_janczukowicz.util.ValidationUtils.requireAtMost;
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.gitlab.pagination.GitLabNoneRequest;
 import io.github.piotr_janczukowicz.gitlab.pagination.GitLabPageRequest;
-import io.github.piotr_janczukowicz.http.uri.HttpUris;
+import io.github.piotr_janczukowicz.pagination.PageQueries;
 import io.github.piotr_janczukowicz.pagination.PaginationConfiguration;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,10 +29,8 @@ final class GitLabPageQueries {
         requireNonNull(request, "request");
         requireNonNull(configuration, "configuration");
         final OptionalInt explicit = request.explicitPerPage();
-        if (explicit.isEmpty()) {
-            return Math.min(configuration.perPage(), PaginationConfiguration.MAX_PER_PAGE);
-        }
-        return requireAtMost(explicit.getAsInt(), PaginationConfiguration.MAX_PER_PAGE, "perPage");
+        return PageQueries.boundPerPage(
+                explicit.isPresent() ? explicit.getAsInt() : null, configuration, PaginationConfiguration.MAX_PER_PAGE);
     }
 
     /**
@@ -53,9 +49,7 @@ final class GitLabPageQueries {
             parameters.put(PER_PAGE, String.valueOf(perPage));
         }
         parameters.keySet().forEach(name -> requireAbsent(baseQuery, name));
-        final Map<String, List<String>> query = HttpUris.copyQueryValues(baseQuery);
-        parameters.forEach((name, value) -> query.put(name, List.of(value)));
-        return Collections.unmodifiableMap(query);
+        return PageQueries.withParameters(baseQuery, parameters);
     }
 
     private static void requireAbsent(final Map<String, List<String>> baseQuery, final String name) {
