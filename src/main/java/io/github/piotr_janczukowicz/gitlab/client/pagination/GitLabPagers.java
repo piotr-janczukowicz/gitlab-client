@@ -22,7 +22,6 @@ import io.github.piotr_janczukowicz.pagination.PaginationException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import okhttp3.HttpUrl;
@@ -246,14 +245,13 @@ public final class GitLabPagers {
 
         private boolean differsOnlyByOrigin(final URI link) {
             final URI base = http.baseUri();
-            return !originOf(base).equals(originOf(link)) && link.getPath().startsWith(base.getPath());
+            return hasOrigin(link)
+                    && link.getPath().startsWith(base.getPath())
+                    && !HttpUris.originOf(base).equals(HttpUris.originOf(link));
         }
 
-        private static String originOf(final URI uri) {
-            final String scheme = String.valueOf(uri.getScheme()).toLowerCase(Locale.ROOT);
-            final int defaultPort = "https".equals(scheme) ? 443 : 80;
-            final int port = uri.getPort() == -1 ? defaultPort : uri.getPort();
-            return scheme + "://" + String.valueOf(uri.getHost()).toLowerCase(Locale.ROOT) + ":" + port;
+        private static boolean hasOrigin(final URI uri) {
+            return uri.getScheme() != null && uri.getHost() != null;
         }
 
         private void warnIfNextPageIsNamed() {

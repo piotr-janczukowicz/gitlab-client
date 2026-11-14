@@ -1,14 +1,15 @@
 package io.github.piotr_janczukowicz.gitlab.client.ratelimit;
 
 import io.github.piotr_janczukowicz.http.HttpHeaders;
+import io.github.piotr_janczukowicz.util.DateTimeUtils;
+import io.github.piotr_janczukowicz.util.NumberUtils;
 import java.time.Instant;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import org.jspecify.annotations.Nullable;
 
 /** Reads the numbers of GitLab's rate-limit headers, which are plain whole numbers. */
 final class GitLabRateLimitHeaders {
-
-    /** 9999-12-31T23:59:59Z, the latest reset that is read. */
-    private static final long LATEST_RESET_EPOCH_SECOND = 253_402_300_799L;
 
     private GitLabRateLimitHeaders() {
         throw new UnsupportedOperationException("Utility class");
@@ -21,7 +22,8 @@ final class GitLabRateLimitHeaders {
      *     too large
      */
     static @Nullable Integer wholeNumber(final HttpHeaders headers, final String name) {
-        return headers.get(name).map(GitLabRateLimitHeaders::parseInt).orElse(null);
+        final OptionalInt number = NumberUtils.parseInt(headers.get(name).orElse(null));
+        return number.isPresent() ? number.getAsInt() : null;
     }
 
     /**
@@ -31,26 +33,9 @@ final class GitLabRateLimitHeaders {
      *     year 9999, which no server means as a reset and which {@link Instant} may not represent
      */
     static @Nullable Instant epochSecond(final HttpHeaders headers, final String name) {
-        return headers.get(name)
-                .map(GitLabRateLimitHeaders::parseLong)
-                .filter(seconds -> seconds >= 0 && seconds <= LATEST_RESET_EPOCH_SECOND)
-                .map(Instant::ofEpochSecond)
-                .orElse(null);
-    }
-
-    private static @Nullable Integer parseInt(final String text) {
-        try {
-            return Integer.valueOf(text.trim());
-        } catch (final NumberFormatException unused) {
-            return null;
-        }
-    }
-
-    private static @Nullable Long parseLong(final String text) {
-        try {
-            return Long.valueOf(text.trim());
-        } catch (final NumberFormatException unused) {
-            return null;
-        }
+        final OptionalLong seconds = NumberUtils.parseLong(headers.get(name).orElse(null));
+        return seconds.isEmpty()
+                ? null
+                : DateTimeUtils.ofEpochSecond(seconds.getAsLong()).orElse(null);
     }
 }

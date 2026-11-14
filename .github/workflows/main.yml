@@ -13,24 +13,7 @@ concurrency:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
-        with:
-          distribution: temurin
-          java-version: "21"
-          cache: maven
-      - run: mvn -B -ntp -s .github/maven-settings.xml clean verify
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PACKAGES_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
-      - name: Upload coverage to Codacy
-        uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 # v1.3.0
-        with:
-          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          coverage-reports: target/site/jacoco/jacoco.xml
+    uses: piotr-janczukowicz/common-parent/.github/workflows/reusable-main.yml@736dd7d218d81bcc26e0489f8853b711ad95f26d # v17
+    with:
+      coverage-report: target/site/jacoco/jacoco.xml
+    secrets: inherit

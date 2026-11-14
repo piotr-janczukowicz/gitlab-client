@@ -8,6 +8,7 @@ import io.github.piotr_janczukowicz.http.HttpResponse;
 import io.github.piotr_janczukowicz.http.HttpStatus;
 import io.github.piotr_janczukowicz.http.transport.RateLimitDetector;
 import io.github.piotr_janczukowicz.http.transport.RateLimitSignal;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -90,9 +91,8 @@ public enum GitLabRateLimitDetector implements RateLimitDetector {
         if (!response.hasStatus(HttpStatus.TOO_MANY_REQUESTS)) {
             return Optional.empty();
         }
-        final Duration retryAfter = response.retryAfter(clock)
-                .filter(delay -> !delay.isZero() && !delay.isNegative())
-                .orElse(null);
+        final Duration retryAfter =
+                response.retryAfter(clock).filter(ValidationUtils::isPositive).orElse(null);
         if (isExhausted(response)) {
             return Optional.of(new RateLimitSignal(retryAfter, resetAfter(response, clock), null));
         }

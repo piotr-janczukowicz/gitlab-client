@@ -1,6 +1,7 @@
 package io.github.piotr_janczukowicz.gitlab.pagination;
 
 import static io.github.piotr_janczukowicz.util.ValidationUtils.requireAtLeast;
+import static io.github.piotr_janczukowicz.util.ValidationUtils.requireAtLeastIfPresent;
 
 import java.util.Map;
 import java.util.OptionalInt;
@@ -21,9 +22,7 @@ public record GitLabOffsetRequest(int page, @Nullable Integer perPage) implement
 
     public GitLabOffsetRequest {
         requireAtLeast(page, 1, PAGE_PARAM);
-        if (perPage != null) {
-            requireAtLeast(perPage, 1, "perPage");
-        }
+        requireAtLeastIfPresent(perPage, 1, "perPage");
     }
 
     /**

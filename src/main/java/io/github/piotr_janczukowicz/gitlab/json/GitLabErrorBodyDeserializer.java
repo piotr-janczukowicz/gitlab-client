@@ -2,6 +2,7 @@ package io.github.piotr_janczukowicz.gitlab.json;
 
 import io.github.piotr_janczukowicz.gitlab.GitLabErrorBody;
 import io.github.piotr_janczukowicz.gitlab.GitLabErrorBody.FieldError;
+import io.github.piotr_janczukowicz.json.jackson.JsonNodes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,10 @@ final class GitLabErrorBodyDeserializer extends StdDeserializer<GitLabErrorBody>
         }
         final JsonNode message = tree.get(MESSAGE);
         return new GitLabErrorBody(
-                messageText(message), fieldErrors(message), text(tree, "error"), text(tree, "error_description"));
+                messageText(message),
+                fieldErrors(message),
+                JsonNodes.textOrNull(tree, "error"),
+                JsonNodes.textOrNull(tree, "error_description"));
     }
 
     private static @Nullable String messageText(final @Nullable JsonNode message) {
@@ -87,13 +91,5 @@ final class GitLabErrorBodyDeserializer extends StdDeserializer<GitLabErrorBody>
             }
         }
         return List.copyOf(texts);
-    }
-
-    private static @Nullable String text(final JsonNode node, final String field) {
-        final JsonNode value = node.get(field);
-        if (value == null || !value.isString()) {
-            return null;
-        }
-        return value.asString();
     }
 }

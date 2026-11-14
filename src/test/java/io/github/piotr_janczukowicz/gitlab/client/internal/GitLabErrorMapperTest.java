@@ -19,7 +19,7 @@ class GitLabErrorMapperTest {
 
     private static final URI URI_OF_CALL = URI.create("https://gitlab.example.test/api/v4/projects/1");
 
-    private final GitLabErrorMapper mapper = GitLabErrorMapper.INSTANCE;
+    private static final GitLabErrorMapper MAPPER = GitLabErrorMapper.INSTANCE;
 
     @Test
     void map_shouldReturnTheExceptionOfTheStatus_whenResponseFails() {
@@ -28,7 +28,7 @@ class GitLabErrorMapperTest {
                 HttpHeaders.empty(),
                 HttpBody.of("{\"message\":\"404 Project Not Found\"}".getBytes(StandardCharsets.UTF_8)));
 
-        final RuntimeException exception = mapper.map(HttpMethod.GET, response, URI_OF_CALL);
+        final RuntimeException exception = MAPPER.map(HttpMethod.GET, response, URI_OF_CALL);
 
         assertThat(exception).isInstanceOf(GitLabNotFoundException.class).hasMessage("404 Project Not Found");
     }
@@ -41,7 +41,7 @@ class GitLabErrorMapperTest {
                 HttpBody.absent());
 
         final RuntimeException exception =
-                mapper.redirectFailure(response, "redirect refused", "raw text", HttpMethod.GET, URI_OF_CALL);
+                MAPPER.redirectFailure(response, "redirect refused", "raw text", HttpMethod.GET, URI_OF_CALL);
 
         assertThat(exception)
                 .isInstanceOfSatisfying(

@@ -602,6 +602,23 @@ class GitLabPagersTest {
     }
 
     @Test
+    void next_shouldRefuseTheLinkWithoutAHint_whenTheLinkHostIsNotAValidHostName() throws IOException {
+        final ScriptedTransport scripted = ScriptedTransport.replying(
+                page("[{\"id\":1}]", "Link", next("https://my_host/api/v4/projects?page=2")), page("[]"));
+
+        final Throwable thrown;
+        try (DefaultGitLabClient client = client(scripted)) {
+            final GitLabPage<Item> first = start(client, "/projects", Map.of(), GitLabPageRequest.byPage());
+            thrown = catchThrowable(first::next);
+        }
+
+        assertThat(thrown)
+                .isInstanceOf(PaginationException.class)
+                .hasMessageContaining("outside the API base URI")
+                .hasMessageNotContaining("external_url");
+    }
+
+    @Test
     void next_shouldFail_whenARelativeLinkCannotBeResolved() throws IOException {
         final ScriptedTransport scripted = ScriptedTransport.replying(
                 page("[{\"id\":1}]", "Link", next("//host:99999/api/v4/projects?page=2")), page("[]"));

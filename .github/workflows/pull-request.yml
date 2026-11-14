@@ -3,6 +3,7 @@ name: Pull request
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -13,19 +14,5 @@ concurrency:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
-        with:
-          distribution: temurin
-          java-version: "21"
-          cache: maven
-      - run: mvn -B -ntp -s .github/maven-settings.xml -Pjavadoc clean verify
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PACKAGES_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
+    uses: piotr-janczukowicz/common-parent/.github/workflows/reusable-pull-request.yml@736dd7d218d81bcc26e0489f8853b711ad95f26d # v17
+    secrets: inherit

@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +43,7 @@ class ClientStacksRateLimitTest {
         final AtomicReference<RateLimitDetector> installed = new AtomicReference<>();
         final ScriptedTransport scripted = ScriptedTransport.replying(ok());
 
-        try (DefaultGitLabClient client = ClientStacks.assemble(
+        final DefaultGitLabClient client = ClientStacks.assemble(
                         scripted.transport(),
                         AuthenticationProviders.bearer("token"),
                         "gitlab-test/1.0",
@@ -51,7 +52,8 @@ class ClientStacksRateLimitTest {
                             installed.set(retry.rateLimitDetector());
                             return transport;
                         })
-                .build()) {
+                .build();
+        try (client) {
             assertThat(installed.get()).isSameAs(GitLabRateLimitDetector.INSTANCE);
         }
     }
@@ -206,7 +208,7 @@ class ClientStacksRateLimitTest {
                 .build();
 
         try (DefaultGitLabClient client = client(scripted, configuration)) {
-            final var before = client.lastRateLimit();
+            final Optional<GitLabRateLimitSnapshot> before = client.lastRateLimit();
             client.execute(HttpCall.get("/projects/1"));
 
             assertSoftly(softly -> {

@@ -5,6 +5,7 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 
 import io.github.piotr_janczukowicz.gitlab.GitLabHeaders;
 import io.github.piotr_janczukowicz.http.HttpHeaders;
+import io.github.piotr_janczukowicz.util.StringUtils;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -52,10 +53,8 @@ public record GitLabRateLimitSnapshot(
         if (limit == null || remaining == null || resetAt == null || limit < 0 || remaining < 0) {
             return Optional.empty();
         }
-        final String name = headers.get(GitLabHeaders.RATE_LIMIT_NAME)
-                .map(String::trim)
-                .filter(value -> !value.isEmpty())
-                .orElse(null);
+        final String name = StringUtils.stripToNull(
+                headers.get(GitLabHeaders.RATE_LIMIT_NAME).orElse(null));
         return Optional.of(new GitLabRateLimitSnapshot(limit, remaining, resetAt, name, observedAt));
     }
 
