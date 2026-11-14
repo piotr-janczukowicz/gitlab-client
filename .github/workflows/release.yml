@@ -22,7 +22,7 @@ jobs:
       contents: write
       packages: write
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-    uses: piotr-janczukowicz/common-parent/.github/workflows/reusable-release-package.yml@3d6301d04e0f494f8144e0f0523cf942c1ffce2d # v15
+    uses: piotr-janczukowicz/common-parent/.github/workflows/reusable-release-package.yml@736dd7d218d81bcc26e0489f8853b711ad95f26d # v17
     secrets: inherit
 
   next-snapshot:
@@ -30,7 +30,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: piotr-janczukowicz/common-parent/.github/workflows/reusable-next-snapshot.yml@3d6301d04e0f494f8144e0f0523cf942c1ffce2d # v15
+    uses: piotr-janczukowicz/common-parent/.github/workflows/reusable-next-snapshot.yml@736dd7d218d81bcc26e0489f8853b711ad95f26d # v17
     secrets: inherit
     with:
       tag: v${{ needs.release.outputs.release }}

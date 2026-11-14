@@ -1,21 +1,14 @@
 name: Publish to Maven Central
 
-# Run by hand with the tag the Release workflow created (such as v2026.3.10.0). The steps live in common-parent so that
-# every repository publishes the same way.
+# Run by hand after the Release workflow created a tag. It publishes the newest vN tag; to publish another one, pick
+# that tag in "Use workflow from". The steps live in common-parent so that every repository publishes the same way.
 on:
   workflow_dispatch:
-    inputs:
-      tag:
-        description: Tag to publish, such as v2026.3.10.0
-        required: true
-        type: string
 
 permissions:
   contents: read
 
 jobs:
   publish:
-    uses: piotr-janczukowicz/common-parent/.github/workflows/reusable-publish.yml@3d6301d04e0f494f8144e0f0523cf942c1ffce2d # v15
-    with:
-      tag: ${{ inputs.tag }}
+    uses: piotr-janczukowicz/common-parent/.github/workflows/reusable-publish.yml@736dd7d218d81bcc26e0489f8853b711ad95f26d # v17
     secrets: inherit
