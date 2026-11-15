@@ -16,10 +16,14 @@ import io.github.piotr_janczukowicz.http.HttpErrorBodies;
 import io.github.piotr_janczukowicz.http.HttpHeaders;
 import io.github.piotr_janczukowicz.http.HttpMethod;
 import io.github.piotr_janczukowicz.http.HttpResponse;
+import io.github.piotr_janczukowicz.test.http.HttpResponses;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -31,6 +35,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class GitLabErrorsTest {
 
     private static final URI URI_OF_CALL = URI.create("https://gitlab.example.test/api/v4/projects/1");
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-11-14T10:00:00Z"), ZoneOffset.UTC);
 
     @ParameterizedTest
     @CsvSource({
@@ -49,7 +54,7 @@ class GitLabErrorsTest {
     void toException_shouldChooseTheTypeByStatus_whenBodyIsEmpty(final int status, final String type) {
         final HttpResponse response = response(status, "");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL, CLOCK);
 
         assertSoftly(softly -> {
             softly.assertThat(exception.getClass().getSimpleName()).isEqualTo(type);
@@ -62,7 +67,7 @@ class GitLabErrorsTest {
     void toException_shouldChooseTheTypeByStatusNeverByText_whenTheMessageNamesAnotherStatus() {
         final HttpResponse response = response(404, "{\"message\":\"401 Unauthorized\"}");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL, CLOCK);
 
         assertSoftly(softly -> {
             softly.assertThat(exception).isInstanceOf(GitLabNotFoundException.class);
@@ -74,7 +79,7 @@ class GitLabErrorsTest {
     void toException_shouldReplaceControlCharactersInTheMessage_whenTheServerSendsThem() {
         final HttpResponse response = response(500, "{\"message\":\"bad\\nline\\u001b[31m\\r\\tred\"}");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL, CLOCK);
 
         assertThat(exception).hasMessage("bad line [31m  red");
     }
@@ -83,7 +88,7 @@ class GitLabErrorsTest {
     void toException_shouldReplaceControlCharactersInFieldErrors_whenTheServerSendsThem() {
         final HttpResponse response = response(400, "{\"message\":{\"na\\nme\":[\"is\\u001b invalid\"]}}");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.POST, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.POST, response, URI_OF_CALL, CLOCK);
 
         assertThat(exception)
                 .isInstanceOfSatisfying(
@@ -99,7 +104,7 @@ class GitLabErrorsTest {
     void toException_shouldUseTheMessage_whenBodyIsTheDocumentedUnauthorizedBody() {
         final HttpResponse response = response(401, "{\"message\":\"401 Unauthorized\"}");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL, CLOCK);
 
         assertSoftly(softly -> {
             softly.assertThat(exception).isInstanceOf(GitLabUnauthorizedException.class);
@@ -112,7 +117,7 @@ class GitLabErrorsTest {
         final HttpResponse response = response(
                 400, "{\"message\":{\"bio\":[\"is too long (maximum is 255 characters)\"],\"name\":[\"a\",\"b\"]}}");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.POST, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.POST, response, URI_OF_CALL, CLOCK);
 
         assertThat(exception)
                 .isInstanceOfSatisfying(
@@ -133,7 +138,7 @@ class GitLabErrorsTest {
     void toException_shouldBeAGenericException_whenA400BodyHasOnlyAStringMessage() {
         final HttpResponse response = response(400, "{\"message\":\"400 (Bad request) \\\"title\\\" not given\"}");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.POST, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.POST, response, URI_OF_CALL, CLOCK);
 
         assertSoftly(softly -> {
             softly.assertThat(exception.getClass()).isEqualTo(GitLabApiException.class);
@@ -145,7 +150,7 @@ class GitLabErrorsTest {
     void toException_shouldBeValidationWithTheBodyMessage_whenA422BodyHasAStringMessage() {
         final HttpResponse response = response(422, "{\"message\":\"Unprocessable entity\"}");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.PUT, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.PUT, response, URI_OF_CALL, CLOCK);
 
         assertThat(exception)
                 .isInstanceOfSatisfying(
@@ -160,7 +165,7 @@ class GitLabErrorsTest {
     void toException_shouldBeValidationWithFieldErrors_whenA422BodyMapsFieldsToMessages() {
         final HttpResponse response = response(422, "{\"message\":{\"title\":[\"is blank\"]}}");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.PUT, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.PUT, response, URI_OF_CALL, CLOCK);
 
         assertThat(exception)
                 .isInstanceOfSatisfying(
@@ -178,9 +183,10 @@ class GitLabErrorsTest {
                 401,
                 "{\"message\":\"401 Unauthorized\",\"error\":\"invalid_token\",\"error_description\":\"expired\"}");
 
-        final GitLabApiException description = GitLabErrors.toException(HttpMethod.GET, withDescription, URI_OF_CALL);
-        final GitLabApiException error = GitLabErrors.toException(HttpMethod.GET, withErrorOnly, URI_OF_CALL);
-        final GitLabApiException all = GitLabErrors.toException(HttpMethod.GET, withAll, URI_OF_CALL);
+        final GitLabApiException description =
+                GitLabErrors.toException(HttpMethod.GET, withDescription, URI_OF_CALL, CLOCK);
+        final GitLabApiException error = GitLabErrors.toException(HttpMethod.GET, withErrorOnly, URI_OF_CALL, CLOCK);
+        final GitLabApiException all = GitLabErrors.toException(HttpMethod.GET, withAll, URI_OF_CALL, CLOCK);
 
         assertSoftly(softly -> {
             softly.assertThat(description).hasMessage("The access token expired");
@@ -202,7 +208,7 @@ class GitLabErrorsTest {
     void toException_shouldUseTheStatusMessageAndKeepTheRawBody_whenBodyIsNotAnErrorObject(final String body) {
         final HttpResponse response = response(502, body);
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL, CLOCK);
 
         assertSoftly(softly -> {
             softly.assertThat(exception).hasMessage("GitLab API request failed with HTTP 502");
@@ -216,7 +222,7 @@ class GitLabErrorsTest {
         Arrays.fill(huge, (byte) 'a');
         final HttpResponse response = new HttpResponse(500, HttpHeaders.empty(), HttpBody.of(huge));
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL, CLOCK);
 
         assertSoftly(softly -> {
             softly.assertThat(exception).hasMessage("GitLab API request failed with HTTP 500");
@@ -229,7 +235,7 @@ class GitLabErrorsTest {
     void toException_shouldUseTheStatusMessage_whenThereIsNoBody() {
         final HttpResponse response = new HttpResponse(500, HttpHeaders.empty(), HttpBody.absent());
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL, CLOCK);
 
         assertSoftly(softly -> {
             softly.assertThat(exception).hasMessage("GitLab API request failed with HTTP 500");
@@ -244,7 +250,7 @@ class GitLabErrorsTest {
                 HttpHeaders.of("X-Request-Id", "req-1"),
                 HttpBody.of("{\"message\":\"404 Project Not Found\"}".getBytes(StandardCharsets.UTF_8)));
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.DELETE, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.DELETE, response, URI_OF_CALL, CLOCK);
 
         assertSoftly(softly -> {
             softly.assertThat(exception.method()).contains(HttpMethod.DELETE);
@@ -258,7 +264,7 @@ class GitLabErrorsTest {
     void toException_shouldRefuse_whenAnArgumentIsNull() {
         final HttpResponse response = response(500, "");
 
-        final Throwable thrown = catchThrowable(() -> GitLabErrors.toException(null, response, URI_OF_CALL));
+        final Throwable thrown = catchThrowable(() -> GitLabErrors.toException(null, response, URI_OF_CALL, CLOCK));
 
         assertThat(thrown).isInstanceOf(NullPointerException.class);
     }
@@ -277,7 +283,7 @@ class GitLabErrorsTest {
     void toException_shouldBeForbidden_whenA403BodyIsGiven() {
         final HttpResponse response = response(403, "{\"message\":\"403 Forbidden\"}");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.DELETE, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.DELETE, response, URI_OF_CALL, CLOCK);
 
         assertThat(exception).isInstanceOf(GitLabForbiddenException.class).hasMessage("403 Forbidden");
     }
@@ -287,20 +293,20 @@ class GitLabErrorsTest {
         final HttpResponse response = new HttpResponse(
                 429, HttpHeaders.of("Retry-After", "30"), HttpBody.of("Retry later".getBytes(StandardCharsets.UTF_8)));
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL, CLOCK);
 
         assertThat(exception).isInstanceOf(GitLabRateLimitException.class);
     }
 
     private static HttpResponse response(final int status, final String body) {
-        return new HttpResponse(status, HttpHeaders.empty(), HttpBody.of(body.getBytes(StandardCharsets.UTF_8)));
+        return HttpResponses.response(status, body);
     }
 
     @Test
     void toException_shouldUseTheStatusMessage_whenBodyIsAnEmptyObject() {
         final HttpResponse response = response(401, "{}");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL, CLOCK);
 
         assertThat(exception).hasMessage("GitLab API request failed with HTTP 401");
     }
@@ -309,7 +315,7 @@ class GitLabErrorsTest {
     void toException_shouldSkipABlankMessage_whenTheBodyHasAnOAuthError() {
         final HttpResponse response = response(401, "{\"message\":\"   \",\"error\":\"invalid_token\"}");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL, CLOCK);
 
         assertThat(exception).hasMessage("invalid_token");
     }
@@ -318,7 +324,7 @@ class GitLabErrorsTest {
     void toException_shouldSkipABlankDescription_whenTheBodyHasAnError() {
         final HttpResponse response = response(401, "{\"error\":\"invalid_token\",\"error_description\":\" \"}");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL, CLOCK);
 
         assertThat(exception).hasMessage("invalid_token");
     }
@@ -327,7 +333,7 @@ class GitLabErrorsTest {
     void toException_shouldBeAGenericException_whenA409BodyMapsFieldsToMessages() {
         final HttpResponse response = response(409, "{\"message\":{\"path\":[\"has already been taken\"]}}");
 
-        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.POST, response, URI_OF_CALL);
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.POST, response, URI_OF_CALL, CLOCK);
 
         assertSoftly(softly -> {
             softly.assertThat(exception.getClass()).isEqualTo(GitLabApiException.class);

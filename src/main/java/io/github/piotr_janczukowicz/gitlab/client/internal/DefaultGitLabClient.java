@@ -17,12 +17,9 @@ import io.github.piotr_janczukowicz.http.client.authentication.AuthenticationPro
 import io.github.piotr_janczukowicz.http.transport.HttpTransport;
 import io.github.piotr_janczukowicz.http.uri.HttpUris;
 import io.github.piotr_janczukowicz.pagination.PaginationConfiguration;
-import java.net.URI;
 import java.time.Clock;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The {@link GitLabClient} over a {@link HttpClient}: it resolves request paths against the API root of the instance
@@ -30,8 +27,6 @@ import org.slf4j.LoggerFactory;
  * {@link io.github.piotr_janczukowicz.gitlab.client.GitLabClients}; this type is not part of the supported API.
  */
 public final class DefaultGitLabClient extends HttpClient implements GitLabClient {
-
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultGitLabClient.class);
 
     private static final String JSON = "application/json";
 
@@ -129,14 +124,15 @@ public final class DefaultGitLabClient extends HttpClient implements GitLabClien
             try {
                 final String agent = requireNonNull(userAgent, "userAgent");
                 requireNoUserAgentDefault();
-                requireSecureOrAllowed(configuration.baseUri());
+                HttpUris.requireSecureOrAllowed(configuration.baseUri(), "GitLab", configuration.allowInsecureHttp());
                 final HttpClientConfiguration http = new HttpClientConfiguration(
                         GitLabApiBase.of(configuration.baseUri()).apiUri(), headers(agent));
+                final Clock clock = Clock.systemUTC();
                 final GitLabRateLimitTracker rateLimits =
-                        new GitLabRateLimitTracker(configuration.rateLimitListener(), Clock.systemUTC());
+                        new GitLabRateLimitTracker(configuration.rateLimitListener(), clock);
                 final HttpClient.Builder builder = HttpClient.builder(transport, http)
                         .auth(auth)
-                        .errorMapper(GitLabErrorMapper.INSTANCE)
+                        .errorMapper(new GitLabErrorMapper(clock))
                         .responseHeadersObserver(rateLimits::observe);
                 if (configuration.callObserver() != null) {
                     builder.callObserver(configuration.callObserver());
@@ -157,21 +153,6 @@ public final class DefaultGitLabClient extends HttpClient implements GitLabClien
 
         private HttpHeaders headers(final String agent) {
             return HttpHeaders.of(ACCEPT, JSON, USER_AGENT, agent).merge(configuration.defaultHeaders());
-        }
-
-        private void requireSecureOrAllowed(final URI baseUri) {
-            if (!"http".equalsIgnoreCase(baseUri.getScheme()) || HttpUris.isLoopbackHost(baseUri.getHost())) {
-                return;
-            }
-            if (!configuration.allowInsecureHttp()) {
-                throw new IllegalStateException("GitLab base URI " + HttpUris.describeSafe(baseUri)
-                        + " is plain http, which would send the credentials unencrypted;"
-                        + " use https, or call allowInsecureHttp(true) for a trusted network");
-            }
-            LOG.atWarn()
-                    .setMessage("GitLab base URI {} is plain http: the credentials are sent unencrypted")
-                    .addArgument(HttpUris.describeSafe(baseUri))
-                    .log();
         }
     }
 }

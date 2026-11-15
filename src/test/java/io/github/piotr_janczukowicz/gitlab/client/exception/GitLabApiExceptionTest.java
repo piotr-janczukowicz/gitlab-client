@@ -67,7 +67,8 @@ class GitLabApiExceptionTest {
                 new GitLabUnauthorizedException(401, "a", null, HttpHeaders.empty(), HttpMethod.GET, URI_OF_CALL),
                 new GitLabForbiddenException(403, "b", null, HttpHeaders.empty(), HttpMethod.GET, URI_OF_CALL),
                 new GitLabNotFoundException(404, "c", null, HttpHeaders.empty(), HttpMethod.GET, URI_OF_CALL),
-                new GitLabRateLimitException(429, "d", null, HttpHeaders.empty(), HttpMethod.GET, URI_OF_CALL),
+                new GitLabRateLimitException(
+                        429, "d", null, null, null, HttpHeaders.empty(), HttpMethod.GET, URI_OF_CALL),
                 new GitLabValidationException(
                         400, "e", null, List.of(), HttpHeaders.empty(), HttpMethod.GET, URI_OF_CALL));
 

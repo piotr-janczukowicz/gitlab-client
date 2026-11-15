@@ -3,9 +3,8 @@ package io.github.piotr_janczukowicz.gitlab.client.pagination;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
-import io.github.piotr_janczukowicz.http.HttpBody;
-import io.github.piotr_janczukowicz.http.HttpHeaders;
 import io.github.piotr_janczukowicz.http.HttpResponse;
+import io.github.piotr_janczukowicz.test.http.HttpResponses;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.lang.reflect.Constructor;
 import org.junit.jupiter.api.Test;
@@ -77,6 +76,6 @@ class GitLabPageHeadersTest {
     }
 
     private static HttpResponse response(final String... headers) {
-        return new HttpResponse(200, HttpHeaders.of(headers), HttpBody.absent());
+        return HttpResponses.response(200, null, headers);
     }
 }

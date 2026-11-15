@@ -6,26 +6,17 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import io.github.piotr_janczukowicz.gitlab.GitLabErrorBody;
 import io.github.piotr_janczukowicz.gitlab.GitLabErrorBody.FieldError;
-import io.github.piotr_janczukowicz.json.JsonCodec;
 import io.github.piotr_janczukowicz.json.JsonDecodeException;
-import io.github.piotr_janczukowicz.testsupport.UnitTest;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@UnitTest
-class GitLabErrorBodyDeserializerTest {
-
-    private final JsonCodec codec = GitLabJsonCodecs.defaults();
+class GitLabErrorBodyMappingTest extends GitLabMappingTest {
 
     @Test
     void decode_shouldReadAStringMessage_whenAnAttributeIsMissing() {
-        final byte[] json = bytes("{\"message\":\"400 (Bad request) \\\"title\\\" not given\"}");
-
-        final GitLabErrorBody body = codec.decode(json, GitLabErrorBody.class);
+        final GitLabErrorBody body = decode("error-body-message-text.json", GitLabErrorBody.class);
 
         assertSoftly(softly -> {
             softly.assertThat(body.message()).isEqualTo("400 (Bad request) \"title\" not given");
@@ -37,9 +28,7 @@ class GitLabErrorBodyDeserializerTest {
 
     @Test
     void decode_shouldReadFieldsAsFieldErrors_whenMessageMapsFieldsToLists() {
-        final byte[] json = bytes("{\"message\":{\"bio\":[\"is too long (maximum is 255 characters)\"]}}");
-
-        final GitLabErrorBody body = codec.decode(json, GitLabErrorBody.class);
+        final GitLabErrorBody body = decode("error-body-message-fields-to-lists.json", GitLabErrorBody.class);
 
         assertSoftly(softly -> {
             softly.assertThat(body.message()).isNull();
@@ -50,10 +39,7 @@ class GitLabErrorBodyDeserializerTest {
 
     @Test
     void decode_shouldReadAStringValueAsOneMessage_whenMessageMapsFieldsToStrings() {
-        final byte[] json = bytes("{\"message\":{\"error\":\"Your snippet has been recognized as spam.\"},"
-                + "\"needs_captcha_response\":true,\"spam_log_id\":42,\"captcha_site_key\":\"REDACTED\"}");
-
-        final GitLabErrorBody body = codec.decode(json, GitLabErrorBody.class);
+        final GitLabErrorBody body = decode("error-body-message-fields-to-strings.json", GitLabErrorBody.class);
 
         assertThat(body.fieldErrors())
                 .containsExactly(new FieldError("error", List.of("Your snippet has been recognized as spam.")));
@@ -61,10 +47,7 @@ class GitLabErrorBodyDeserializerTest {
 
     @Test
     void decode_shouldNameNestedFieldsWithADottedPath_whenMessageEmbedsAnEntity() {
-        final byte[] json = bytes("{\"message\":{\"owner\":{\"name\":[\"is blank\"],\"email\":[\"is invalid\"]},"
-                + "\"title\":[\"is too short\"]}}");
-
-        final GitLabErrorBody body = codec.decode(json, GitLabErrorBody.class);
+        final GitLabErrorBody body = decode("error-body-message-embedded-entity.json", GitLabErrorBody.class);
 
         assertThat(body.fieldErrors())
                 .containsExactly(
@@ -75,9 +58,7 @@ class GitLabErrorBodyDeserializerTest {
 
     @Test
     void decode_shouldJoinTheItemsAsOneMessage_whenMessageIsAnArray() {
-        final byte[] json = bytes("{\"message\":[\"first\",\"second\"]}");
-
-        final GitLabErrorBody body = codec.decode(json, GitLabErrorBody.class);
+        final GitLabErrorBody body = decode("error-body-message-array.json", GitLabErrorBody.class);
 
         assertSoftly(softly -> {
             softly.assertThat(body.message()).isEqualTo("first, second");
@@ -87,9 +68,7 @@ class GitLabErrorBodyDeserializerTest {
 
     @Test
     void decode_shouldReadErrorAndDescription_whenBodyIsAnOAuthError() {
-        final byte[] json = bytes("{\"error\":\"invalid_token\",\"error_description\":\"The access token expired\"}");
-
-        final GitLabErrorBody body = codec.decode(json, GitLabErrorBody.class);
+        final GitLabErrorBody body = decode("error-body-oauth-error.json", GitLabErrorBody.class);
 
         assertSoftly(softly -> {
             softly.assertThat(body.error()).isEqualTo("invalid_token");
@@ -100,16 +79,14 @@ class GitLabErrorBodyDeserializerTest {
 
     @Test
     void decode_shouldIgnoreValuesItCannotUse_whenMessageHoldsOtherShapes() {
-        final byte[] json = bytes("{\"message\":{\"count\":3,\"flag\":true,\"nothing\":null,\"tags\":[1,\"a\",null]}}");
-
-        final GitLabErrorBody body = codec.decode(json, GitLabErrorBody.class);
+        final GitLabErrorBody body = decode("error-body-message-other-shapes.json", GitLabErrorBody.class);
 
         assertThat(body.fieldErrors()).containsExactly(new FieldError("tags", List.of("a")));
     }
 
     @Test
     void decode_shouldKeepNothing_whenBodyIsAnEmptyObject() {
-        final GitLabErrorBody body = codec.decode(bytes("{}"), GitLabErrorBody.class);
+        final GitLabErrorBody body = decode("error-body-empty-object.json", GitLabErrorBody.class);
 
         assertSoftly(softly -> {
             softly.assertThat(body.message()).isNull();
@@ -120,27 +97,16 @@ class GitLabErrorBodyDeserializerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"[\"a\"]", "\"text\"", "42", "true"})
-    void decode_shouldFail_whenBodyIsNotAJsonObject(final String json) {
-        final byte[] bytes = bytes(json);
-
-        final Throwable thrown = catchThrowable(() -> codec.decode(bytes, GitLabErrorBody.class));
+    @ValueSource(
+            strings = {
+                "error-body-array.json",
+                "error-body-string.json",
+                "error-body-number.json",
+                "error-body-boolean.json"
+            })
+    void decode_shouldFail_whenBodyIsNotAJsonObject(final String resource) {
+        final Throwable thrown = catchThrowable(() -> decode(resource, GitLabErrorBody.class));
 
         assertThat(thrown).isInstanceOf(JsonDecodeException.class);
-    }
-
-    @Test
-    void constructor_shouldCopyTheFieldErrors_whenTheListIsChangedLater() {
-        final ArrayList<FieldError> errors = new ArrayList<>();
-        errors.add(new FieldError("a", List.of("x")));
-
-        final GitLabErrorBody body = new GitLabErrorBody(null, errors, null, null);
-        errors.add(new FieldError("b", List.of("y")));
-
-        assertThat(body.fieldErrors()).hasSize(1);
-    }
-
-    private static byte[] bytes(final String json) {
-        return json.getBytes(StandardCharsets.UTF_8);
     }
 }

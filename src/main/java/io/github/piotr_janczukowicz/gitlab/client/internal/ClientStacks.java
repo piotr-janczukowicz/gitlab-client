@@ -13,7 +13,6 @@ import io.github.piotr_janczukowicz.http.transport.HttpTransport;
 import io.github.piotr_janczukowicz.http.transport.HttpTransportConfiguration;
 import io.github.piotr_janczukowicz.http.transport.MutationPacingHttpTransport;
 import io.github.piotr_janczukowicz.http.transport.RetryConfiguration;
-import java.time.Duration;
 import java.util.Set;
 import java.util.function.BiFunction;
 
@@ -54,7 +53,7 @@ public final class ClientStacks {
         try {
             final HttpTransportConfiguration transport = configuration.transport();
             final HttpTransport retried = retrying.apply(
-                    paced(
+                    MutationPacingHttpTransport.pacedBy(
                             new ConcurrencyLimitingHttpTransport(
                                     base, transport.maxConcurrentRequests(), transport.maxSlotWait()),
                             configuration.mutationInterval()),
@@ -71,13 +70,5 @@ public final class ClientStacks {
             base.close();
             throw rejected;
         }
-    }
-
-    private static HttpTransport paced(final HttpTransport delegate, final Duration mutationInterval) {
-        if (mutationInterval.isZero()) {
-            return delegate;
-        }
-        return new MutationPacingHttpTransport(
-                delegate, mutationInterval, MutationPacingHttpTransport.DEFAULT_MUTATION_METHODS);
     }
 }

@@ -1,0 +1,8 @@
+{
+  "message": {
+    "error": "Your snippet has been recognized as spam."
+  },
+  "needs_captcha_response": true,
+  "spam_log_id": 42,
+  "captcha_site_key": "REDACTED"
+}

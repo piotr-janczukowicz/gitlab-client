@@ -1,7 +1,6 @@
 package io.github.piotr_janczukowicz.gitlab.json;
 
 import io.github.piotr_janczukowicz.json.jackson.JsonMappers;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 import tools.jackson.databind.JacksonModule;
@@ -23,15 +22,7 @@ final class GitLabJsonMappers {
         return DEFAULTS;
     }
 
-    static List<JacksonModule> modulesOf(final Iterable<? extends GitLabJsonModule> providers) {
-        final List<JacksonModule> modules = new ArrayList<>();
-        for (final GitLabJsonModule provider : providers) {
-            modules.add(provider.module());
-        }
-        return List.copyOf(modules);
-    }
-
     private static List<JacksonModule> serviceModules() {
-        return modulesOf(ServiceLoader.load(GitLabJsonModule.class));
+        return JsonMappers.modulesOf(ServiceLoader.load(GitLabJsonModule.class), GitLabJsonModule::module);
     }
 }

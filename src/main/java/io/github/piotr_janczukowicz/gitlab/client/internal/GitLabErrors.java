@@ -10,14 +10,18 @@ import io.github.piotr_janczukowicz.gitlab.client.exception.GitLabRateLimitExcep
 import io.github.piotr_janczukowicz.gitlab.client.exception.GitLabUnauthorizedException;
 import io.github.piotr_janczukowicz.gitlab.client.exception.GitLabValidationError;
 import io.github.piotr_janczukowicz.gitlab.client.exception.GitLabValidationException;
+import io.github.piotr_janczukowicz.gitlab.client.ratelimit.GitLabRateLimitSnapshot;
 import io.github.piotr_janczukowicz.gitlab.json.GitLabJsonCodecs;
 import io.github.piotr_janczukowicz.http.HttpErrorBodies;
 import io.github.piotr_janczukowicz.http.HttpMethod;
 import io.github.piotr_janczukowicz.http.HttpResponse;
 import io.github.piotr_janczukowicz.json.JsonCodec;
 import io.github.piotr_janczukowicz.util.StringUtils;
+import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -52,15 +56,17 @@ final class GitLabErrors {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    static GitLabApiException toException(final HttpMethod method, final HttpResponse response, final URI requestUri) {
+    static GitLabApiException toException(
+            final HttpMethod method, final HttpResponse response, final URI requestUri, final Clock clock) {
         requireNonNull(method, "method");
         requireNonNull(response, "response");
         requireNonNull(requestUri, "requestUri");
+        requireNonNull(clock, "clock");
 
         final int status = response.statusCode();
         final ParsedError parsed =
                 response.mapBody(bytes -> parse(bytes, status, response.charset()), () -> absent(status));
-        final Failure failure = new Failure(response, parsed, method, requestUri);
+        final Failure failure = new Failure(response, parsed, method, requestUri, clock);
         return switch (status) {
             case UNAUTHORIZED -> failure.unauthorized();
             case FORBIDDEN -> failure.forbidden();
@@ -102,20 +108,13 @@ final class GitLabErrors {
     private static ParsedError fromBody(final GitLabErrorBody body, final int status, final String rawBody) {
         final List<GitLabValidationError> errors = body.fieldErrors().stream()
                 .map(field -> new GitLabValidationError(
-                        withoutControlCharacters(field.field()),
+                        StringUtils.replaceControlCharacters(field.field(), ' '),
                         field.messages().stream()
-                                .map(GitLabErrors::withoutControlCharacters)
+                                .map(message -> StringUtils.replaceControlCharacters(message, ' '))
                                 .toList()))
                 .toList();
-        return new ParsedError(withoutControlCharacters(messageOf(body, errors, status)), errors, rawBody);
-    }
-
-    // Server text reaches logs through the exception message, so a control character that could forge a log line or
-    // an escape sequence becomes a space. The raw body keeps the text as it came.
-    private static String withoutControlCharacters(final String text) {
-        final StringBuilder clean = new StringBuilder(text.length());
-        text.chars().forEach(c -> clean.append(Character.isISOControl(c) ? ' ' : (char) c));
-        return clean.toString();
+        return new ParsedError(
+                StringUtils.replaceControlCharacters(messageOf(body, errors, status), ' '), errors, rawBody);
     }
 
     private static String messageOf(
@@ -145,7 +144,7 @@ final class GitLabErrors {
             List<GitLabValidationError> errors,
             @Nullable String rawBody) {}
 
-    private record Failure(HttpResponse response, ParsedError parsed, HttpMethod method, URI uri) {
+    private record Failure(HttpResponse response, ParsedError parsed, HttpMethod method, URI uri, Clock clock) {
 
         GitLabApiException generic() {
             return new GitLabApiException(
@@ -168,8 +167,18 @@ final class GitLabErrors {
         }
 
         GitLabApiException rateLimited() {
+            final Instant now = clock.instant();
+            final GitLabRateLimitSnapshot rateLimit =
+                    GitLabRateLimitSnapshot.from(response.headers(), now).orElse(null);
             return new GitLabRateLimitException(
-                    response.statusCode(), parsed.message(), parsed.rawBody(), response.headers(), method, uri);
+                    response.statusCode(),
+                    parsed.message(),
+                    parsed.rawBody(),
+                    rateLimit,
+                    retryAt(now, rateLimit),
+                    response.headers(),
+                    method,
+                    uri);
         }
 
         GitLabApiException invalid() {
@@ -181,6 +190,13 @@ final class GitLabErrors {
                     response.headers(),
                     method,
                     uri);
+        }
+
+        private @Nullable Instant retryAt(final Instant now, final @Nullable GitLabRateLimitSnapshot rateLimit) {
+            return response.retryAfter(clock)
+                    .filter(ValidationUtils::isPositive)
+                    .map(now::plus)
+                    .orElseGet(() -> rateLimit == null ? null : rateLimit.resetAt());
         }
     }
 }
