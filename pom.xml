@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>gitlab-client</artifactId>
-  <version>2-SNAPSHOT</version>
+  <version>3-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>gitlab-client</name>
