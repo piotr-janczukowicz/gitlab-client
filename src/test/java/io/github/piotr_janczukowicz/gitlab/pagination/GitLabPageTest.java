@@ -129,6 +129,37 @@ class GitLabPageTest {
         assertThat(counts).containsExactly(1, 2);
     }
 
+    @Test
+    void readers_shouldRefuseAStalePageBeforeReadingAnything_whenTheWalkHasMovedPast() {
+        final GitLabPage<String> stale = new GitLabPage<>(List.of("a"), staleWalk(), 1, null);
+
+        final Throwable all = catchThrowable(stale::all);
+        final Throwable stream = catchThrowable(stale::stream);
+        final Throwable pages = catchThrowable(stale::pages);
+        final Throwable forEach = catchThrowable(() -> stale.forEachPage(page -> {}));
+
+        assertSoftly(softly -> {
+            softly.assertThat(all).isInstanceOf(IllegalStateException.class);
+            softly.assertThat(stream).isInstanceOf(IllegalStateException.class);
+            softly.assertThat(pages).isInstanceOf(IllegalStateException.class);
+            softly.assertThat(forEach).isInstanceOf(IllegalStateException.class);
+        });
+    }
+
+    private static GitLabPageWalk<String> staleWalk() {
+        return new GitLabPageWalk<>() {
+            @Override
+            public Optional<GitLabPage<String>> loadNext(final GitLabPage<String> current) {
+                return Optional.empty();
+            }
+
+            @Override
+            public void requireLatest(final GitLabPage<String> page) {
+                throw new IllegalStateException("stale");
+            }
+        };
+    }
+
     private GitLabPageWalk<String> walk(final Function<GitLabPage<String>, Optional<GitLabPage<String>>> loader) {
         return new GitLabPageWalk<>() {
             @Override

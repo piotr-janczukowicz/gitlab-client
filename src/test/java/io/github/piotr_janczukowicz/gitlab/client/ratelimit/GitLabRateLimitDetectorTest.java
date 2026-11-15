@@ -11,6 +11,7 @@ import io.github.piotr_janczukowicz.http.HttpRequest;
 import io.github.piotr_janczukowicz.http.HttpResponse;
 import io.github.piotr_janczukowicz.http.transport.RateLimitSignal;
 import io.github.piotr_janczukowicz.http.uri.ParsedUrl;
+import io.github.piotr_janczukowicz.test.http.HttpResponses;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.net.URI;
 import java.time.Clock;
@@ -250,7 +251,7 @@ class GitLabRateLimitDetectorTest {
     }
 
     private static HttpResponse response(final int status, final String... headers) {
-        return new HttpResponse(status, HttpHeaders.of(headers), HttpBody.absent());
+        return HttpResponses.response(status, null, headers);
     }
 
     private static HttpRequest request(final HttpMethod method, final String path) {

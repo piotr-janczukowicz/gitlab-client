@@ -104,37 +104,41 @@ public final class GitLabPage<T> implements Page<T, GitLabPage<T>> {
     /**
      * Every item of this page and of the pages after it, read eagerly. The number of pages is limited only if
      * {@code PaginationConfiguration.maxPages} is set, so set it when the server is not trusted. A walk goes forward
-     * only, so read it once: a second call on the same first page reads that page and then fails with an
-     * {@link IllegalStateException} where the second walk would advance.
+     * only, so read it once: a second call on the same first page fails at once with an {@link IllegalStateException},
+     * before it reads anything.
      *
      * @return all the items
+     * @throws IllegalStateException if the walk has moved past this page
      * @throws IOException if a request fails
      */
     public List<T> all() throws IOException {
+        walk.requireLatest(this);
         return Pages.all(this);
     }
 
     /**
      * The items of this page and of the pages after it, requested lazily. A failure to load a page surfaces as an
      * {@link java.io.UncheckedIOException} from the stream operation. A walk goes forward only, so read it once: a
-     * second call on the same first page reads that page and then fails with an {@link IllegalStateException} where the
-     * second walk would advance.
+     * second call on the same first page fails at once with an {@link IllegalStateException}, before it reads anything.
      *
      * @return a sequential stream of items
+     * @throws IllegalStateException if the walk has moved past this page
      */
     public Stream<T> stream() {
+        walk.requireLatest(this);
         return Pages.items(this);
     }
 
     /**
      * This page and the pages after it, requested lazily. A failure to load a page surfaces as an
      * {@link java.io.UncheckedIOException} from the stream operation. A walk goes forward only, so read it once: a
-     * second call on the same first page reads that page and then fails with an {@link IllegalStateException} where the
-     * second walk would advance.
+     * second call on the same first page fails at once with an {@link IllegalStateException}, before it reads anything.
      *
      * @return a sequential stream of pages
+     * @throws IllegalStateException if the walk has moved past this page
      */
     public Stream<GitLabPage<T>> pages() {
+        walk.requireLatest(this);
         return Pages.pages(this);
     }
 
@@ -142,9 +146,11 @@ public final class GitLabPage<T> implements Page<T, GitLabPage<T>> {
      * Passes this page and the pages after it to {@code consumer}.
      *
      * @param consumer receives each page in order
+     * @throws IllegalStateException if the walk has moved past this page
      * @throws IOException if a request fails
      */
     public void forEachPage(final Consumer<GitLabPage<T>> consumer) throws IOException {
+        walk.requireLatest(this);
         Pages.forEachPage(this, consumer);
     }
 }

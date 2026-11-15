@@ -1,0 +1,8 @@
+{
+  "message": {
+    "count": 3,
+    "flag": true,
+    "nothing": null,
+    "tags": [1, "a", null]
+  }
+}

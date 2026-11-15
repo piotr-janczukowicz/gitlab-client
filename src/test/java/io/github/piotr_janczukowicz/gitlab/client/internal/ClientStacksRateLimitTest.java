@@ -14,6 +14,7 @@ import io.github.piotr_janczukowicz.http.HttpResponse;
 import io.github.piotr_janczukowicz.http.client.HttpCall;
 import io.github.piotr_janczukowicz.http.client.authentication.AuthenticationProviders;
 import io.github.piotr_janczukowicz.http.transport.RateLimitDetector;
+import io.github.piotr_janczukowicz.test.http.HttpResponses;
 import io.github.piotr_janczukowicz.test.http.ScriptedTransport;
 import io.github.piotr_janczukowicz.test.http.TestRetryingTransports;
 import io.github.piotr_janczukowicz.testsupport.MutableClock;
@@ -287,10 +288,10 @@ class ClientStacksRateLimitTest {
     }
 
     private static HttpResponse ok(final String... headers) {
-        return new HttpResponse(200, HttpHeaders.of(headers), HttpBody.absent());
+        return HttpResponses.response(200, null, headers);
     }
 
     private static HttpResponse throttled(final String... headers) {
-        return new HttpResponse(429, HttpHeaders.of(headers), HttpBody.absent());
+        return HttpResponses.response(429, null, headers);
     }
 }

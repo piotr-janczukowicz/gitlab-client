@@ -16,6 +16,7 @@ import io.github.piotr_janczukowicz.http.uri.HttpUris;
 import io.github.piotr_janczukowicz.json.JsonCodec;
 import io.github.piotr_janczukowicz.json.JsonType;
 import io.github.piotr_janczukowicz.pagination.LinkHeader;
+import io.github.piotr_janczukowicz.pagination.PageLinks;
 import io.github.piotr_janczukowicz.pagination.PageWalkGuard;
 import io.github.piotr_janczukowicz.pagination.PaginationConfiguration;
 import io.github.piotr_janczukowicz.pagination.PaginationException;
@@ -146,7 +147,8 @@ public final class GitLabPagers {
 
         private Optional<URI> nextLink() {
             if (linkHeader != null) {
-                final Optional<URI> next = LinkHeader.parse(linkHeader).next().map(this::absoluteLink);
+                final Optional<URI> next =
+                        LinkHeader.parse(linkHeader).next().map(link -> PageLinks.absolute(currentUri, link));
                 if (next.isEmpty()) {
                     warnIfNextPageIsNamed();
                     logEnd("the Link header has no rel=\"next\"");
@@ -225,33 +227,9 @@ public final class GitLabPagers {
             return value == ' ' || value == '\t' || value == '\n' || value == '\r';
         }
 
-        private URI absoluteLink(final URI link) {
-            if (link.isAbsolute()) {
-                return link;
-            }
-            try {
-                return HttpUris.resolveReference(currentUri, link.toString());
-            } catch (final IllegalArgumentException ex) {
-                throw new PaginationException(
-                        "Link rel=\"next\" cannot be resolved against the request URI: " + HttpUris.describeSafe(link),
-                        ex);
-            }
-        }
-
         private String outsideBaseMessage(final URI link) {
             final String message = "Link rel=\"next\" is outside the API base URI: " + HttpUris.describeSafe(link);
-            return differsOnlyByOrigin(link) ? message + HOST_HINT : message;
-        }
-
-        private boolean differsOnlyByOrigin(final URI link) {
-            final URI base = http.baseUri();
-            return hasOrigin(link)
-                    && link.getPath().startsWith(base.getPath())
-                    && !HttpUris.originOf(base).equals(HttpUris.originOf(link));
-        }
-
-        private static boolean hasOrigin(final URI uri) {
-            return uri.getScheme() != null && uri.getHost() != null;
+            return PageLinks.differsOnlyByOrigin(http.baseUri(), link) ? message + HOST_HINT : message;
         }
 
         private void warnIfNextPageIsNamed() {

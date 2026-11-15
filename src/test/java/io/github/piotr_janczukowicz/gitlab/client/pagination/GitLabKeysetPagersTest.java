@@ -7,23 +7,23 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import io.github.piotr_janczukowicz.gitlab.client.GitLabClientConfiguration;
 import io.github.piotr_janczukowicz.gitlab.client.internal.ClientStacks;
 import io.github.piotr_janczukowicz.gitlab.client.internal.DefaultGitLabClient;
-import io.github.piotr_janczukowicz.gitlab.json.GitLabJsonCodecs;
+import io.github.piotr_janczukowicz.gitlab.client.pagination.ItemCodec.Item;
 import io.github.piotr_janczukowicz.gitlab.pagination.GitLabKeysetRequest;
 import io.github.piotr_janczukowicz.gitlab.pagination.GitLabPage;
 import io.github.piotr_janczukowicz.gitlab.pagination.GitLabPageRequest;
 import io.github.piotr_janczukowicz.gitlab.pagination.GitLabPageRequestKind;
-import io.github.piotr_janczukowicz.http.HttpBody;
 import io.github.piotr_janczukowicz.http.HttpHeaders;
 import io.github.piotr_janczukowicz.http.HttpResponse;
 import io.github.piotr_janczukowicz.http.client.authentication.AuthenticationProviders;
 import io.github.piotr_janczukowicz.json.JsonCodec;
 import io.github.piotr_janczukowicz.json.JsonTypes;
 import io.github.piotr_janczukowicz.pagination.PaginationConfiguration;
+import io.github.piotr_janczukowicz.test.http.HttpResponses;
+import io.github.piotr_janczukowicz.test.http.LinkHeaders;
 import io.github.piotr_janczukowicz.test.http.ScriptedTransport;
 import io.github.piotr_janczukowicz.testsupport.UnitTest;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,10 +34,8 @@ class GitLabKeysetPagersTest {
 
     private static final URI BASE = URI.create("https://gitlab.example.test");
     private static final String API = "https://gitlab.example.test/api/v4";
-    private static final JsonCodec JSON = GitLabJsonCodecs.defaults();
+    private static final JsonCodec JSON = new ItemCodec();
     private static final GitLabListSpec<Item> KEYSET = GitLabListSpec.offsetOrKeyset(JsonTypes.listOf(Item.class));
-
-    record Item(long id) {}
 
     @Test
     void start_shouldSendTheFourKeysetParameters_whenAKeysetRequestIsGiven() throws IOException {
@@ -246,10 +244,10 @@ class GitLabKeysetPagersTest {
     }
 
     private static HttpResponse page(final String json, final String... headers) {
-        return new HttpResponse(200, HttpHeaders.of(headers), HttpBody.of(json.getBytes(StandardCharsets.UTF_8)));
+        return HttpResponses.response(200, json, headers);
     }
 
     private static String next(final String uri) {
-        return "<" + uri + ">; rel=\"next\"";
+        return LinkHeaders.next(uri);
     }
 }
