@@ -16,6 +16,7 @@ import io.github.piotr_janczukowicz.http.HttpErrorBodies;
 import io.github.piotr_janczukowicz.http.HttpMethod;
 import io.github.piotr_janczukowicz.http.HttpResponse;
 import io.github.piotr_janczukowicz.json.JsonCodec;
+import io.github.piotr_janczukowicz.util.DateTimeUtils;
 import io.github.piotr_janczukowicz.util.StringUtils;
 import io.github.piotr_janczukowicz.util.ValidationUtils;
 import java.net.URI;
@@ -195,7 +196,7 @@ final class GitLabErrors {
         private @Nullable Instant retryAt(final Instant now, final @Nullable GitLabRateLimitSnapshot rateLimit) {
             return response.retryAfter(clock)
                     .filter(ValidationUtils::isPositive)
-                    .map(now::plus)
+                    .flatMap(delay -> DateTimeUtils.tryPlus(now, delay))
                     .orElseGet(() -> rateLimit == null ? null : rateLimit.resetAt());
         }
     }

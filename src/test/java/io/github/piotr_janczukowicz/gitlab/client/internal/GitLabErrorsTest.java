@@ -298,6 +298,21 @@ class GitLabErrorsTest {
         assertThat(exception).isInstanceOf(GitLabRateLimitException.class);
     }
 
+    @Test
+    void toException_shouldStillBeRateLimited_whenRetryAfterIsTooLargeForAnInstant() {
+        final HttpResponse response = new HttpResponse(
+                429,
+                HttpHeaders.of("Retry-After", String.valueOf(Long.MAX_VALUE)),
+                HttpBody.of("Retry later".getBytes(StandardCharsets.UTF_8)));
+
+        final GitLabApiException exception = GitLabErrors.toException(HttpMethod.GET, response, URI_OF_CALL, CLOCK);
+
+        assertThat(exception)
+                .isInstanceOfSatisfying(
+                        GitLabRateLimitException.class,
+                        rateLimited -> assertThat(rateLimited.retryAt()).isEmpty());
+    }
+
     private static HttpResponse response(final int status, final String body) {
         return HttpResponses.response(status, body);
     }

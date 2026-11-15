@@ -6,6 +6,8 @@ import static io.github.piotr_janczukowicz.util.ValidationUtils.requireNonNull;
 import io.github.piotr_janczukowicz.gitlab.GitLabHeaders;
 import io.github.piotr_janczukowicz.http.HttpHeaders;
 import io.github.piotr_janczukowicz.util.StringUtils;
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -26,7 +28,10 @@ import org.jspecify.annotations.Nullable;
  * @param observedAt when the response was received
  */
 public record GitLabRateLimitSnapshot(
-        int limit, int remaining, Instant resetAt, @Nullable String name, Instant observedAt) {
+        int limit, int remaining, Instant resetAt, @Nullable String name, Instant observedAt) implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     public GitLabRateLimitSnapshot {
         requireAtLeast(limit, 0, "limit");

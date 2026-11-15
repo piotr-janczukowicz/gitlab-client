@@ -612,7 +612,7 @@ class GitLabPagersTest {
 
         assertThat(thrown)
                 .isInstanceOf(PaginationException.class)
-                .hasMessageContaining("outside the API base URI")
+                .hasMessageContaining("is not an http(s) URL")
                 .hasMessageNotContaining("external_url");
     }
 

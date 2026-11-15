@@ -20,6 +20,7 @@ public final class GitLabRateLimitException extends GitLabApiException {
     private static final long serialVersionUID = 1L;
 
     private final @Nullable GitLabRateLimitSnapshot rateLimit;
+
     private final @Nullable Instant retryAt;
 
     /**
