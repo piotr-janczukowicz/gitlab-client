@@ -12,10 +12,10 @@ import java.util.regex.Pattern;
 /** A test double of the codec for the pager tests: it reads {@code "id":N} pairs of a page body into {@link Item}s. */
 final class ItemCodec implements JsonCodec {
 
-    record Item(long id) {}
-
     private static final Pattern ID = Pattern.compile("\"id\"\\s*:\\s*([^,}]+)");
     private static final Pattern NUMBER = Pattern.compile("\\d+");
+
+    record Item(long id) {}
 
     @Override
     public <T> T decode(final byte[] json, final Class<T> type) {

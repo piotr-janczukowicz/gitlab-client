@@ -108,8 +108,8 @@ class ArchitectureTest {
                         && !clazz.isAnnotatedWith("io.github.piotr_janczukowicz.testsupport.IntegrationTest")
                         && !clazz.isAnnotatedWith("org.junit.jupiter.api.Tag"))
                 .filter(clazz -> clazz.getAllRawSuperclasses().stream()
-                        .noneMatch(type -> type.getName()
-                                .equals("io.github.piotr_janczukowicz.testsupport.mapping.AbstractMappingTest")))
+                        .noneMatch(type -> "io.github.piotr_janczukowicz.testsupport.mapping.AbstractMappingTest"
+                                .equals(type.getName())))
                 .map(JavaClass::getName)
                 .toList();
 
