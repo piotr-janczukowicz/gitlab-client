@@ -18,7 +18,7 @@
   <url>https://github.com/piotr-janczukowicz/gitlab-client</url>
 
   <properties>
-    <common-core.version>8-SNAPSHOT</common-core.version>
+    <common-core.version>8</common-core.version>
     <junit.parallel.enabled>true</junit.parallel.enabled>
     <test.module.args>--add-modules jdk.httpserver --add-reads io.github.piotr_janczukowicz.gitlabclient=jdk.httpserver --add-opens io.github.piotr_janczukowicz.gitlabclient/io.github.piotr_janczukowicz.architecture=common.core</test.module.args>
   </properties>
